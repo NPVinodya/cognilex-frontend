@@ -9,7 +9,6 @@ export default function RegisterPage() {
    const [username, setUsername] = useState("");
    const [email, setEmail] = useState("");
    const [password, setPassword] = useState("");
-   const [userType, setUserType] = useState<'student' | 'citizen' | 'lawyer'>('citizen');
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState("");
    const [success, setSuccess] = useState("");
@@ -25,7 +24,7 @@ export default function RegisterPage() {
          name: username,
          email,
          password,
-         user_type: userType,
+        
        });
 
        setSuccess(response.data.message || "Registration successful!");
