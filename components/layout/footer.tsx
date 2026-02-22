@@ -39,26 +39,26 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 text-white">
+    <footer className="bg-slate-900 border-t border-slate-800 text-slate-200">
       {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-          
+
           {/* Company Info */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3 group">
               <div className="bg-white p-2.5 rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:rotate-6">
-                <Scale className="w-8 h-8 text-blue-600" />
+                <Scale className="w-8 h-8 text-amber-600" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">CogniLex AI</h2>
-                <p className="text-xs text-blue-200">Sri Lankan Law Assistant</p>
+                <p className="text-xs text-slate-400">Sri Lankan Law Assistant</p>
               </div>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">
-              Your trusted AI-powered legal assistant for Sri Lankan law. Get instant legal guidance and connect with qualified lawyers.
+              Your authoritative AI-powered legal assistant for Sri Lankan law. Get instant professional guidance and connect with qualified lawyers.
             </p>
-            
+
             {/* Contact Info */}
             <div className="space-y-2">
               <a href="tel:+94112345678" className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors group">
@@ -85,7 +85,7 @@ export default function Footer() {
           {/* Quick Links */}
           <div>
             <h3 className="text-lg font-bold mb-4 flex items-center">
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Quick Links</span>
+              <span className="text-white">Quick Links</span>
             </h3>
             <ul className="space-y-2">
               {quickLinks.map((link) => (
@@ -94,7 +94,7 @@ export default function Footer() {
                     onClick={() => router.push(link.path)}
                     className="flex items-center space-x-2 text-gray-300 hover:text-white hover:translate-x-1 transition-all duration-300 group"
                   >
-                    <ArrowRight className="w-4 h-4 text-blue-400 group-hover:text-blue-300" />
+                    <ArrowRight className="w-4 h-4 text-amber-500 group-hover:text-amber-400" />
                     <span className="text-sm">{link.name}</span>
                   </button>
                 </li>
@@ -105,7 +105,7 @@ export default function Footer() {
           {/* Practice Areas */}
           <div>
             <h3 className="text-lg font-bold mb-4 flex items-center">
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Practice Areas</span>
+              <span className="text-white">Practice Areas</span>
             </h3>
             <ul className="space-y-2">
               {practiceAreas.map((area) => (
@@ -114,7 +114,7 @@ export default function Footer() {
                     onClick={() => router.push(area.path)}
                     className="flex items-center space-x-2 text-gray-300 hover:text-white hover:translate-x-1 transition-all duration-300 group"
                   >
-                    <ArrowRight className="w-4 h-4 text-blue-400 group-hover:text-blue-300" />
+                    <ArrowRight className="w-4 h-4 text-amber-500 group-hover:text-amber-400" />
                     <span className="text-sm">{area.name}</span>
                   </button>
                 </li>
@@ -125,9 +125,9 @@ export default function Footer() {
           {/* Newsletter & Legal */}
           <div>
             <h3 className="text-lg font-bold mb-4 flex items-center">
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Stay Connected</span>
+              <span className="text-white">Stay Connected</span>
             </h3>
-            
+
             {/* Newsletter */}
             <div className="mb-6">
               <p className="text-gray-300 text-sm mb-3">Subscribe to our newsletter for legal updates</p>
@@ -135,9 +135,9 @@ export default function Footer() {
                 <input
                   type="email"
                   placeholder="Your email"
-                  className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm text-white placeholder-gray-400"
+                  className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm text-white placeholder-slate-400"
                 />
-                <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-r-lg transition-colors">
+                <button className="px-4 py-2 bg-amber-600 hover:bg-amber-700 rounded-r-lg transition-colors">
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -164,10 +164,10 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-white/10 bg-black/20">
+      <div className="border-t border-slate-800 bg-slate-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            
+
             {/* Copyright */}
             <div className="flex items-center space-x-2 text-sm text-gray-400">
               <span>© {new Date().getFullYear()} CogniLex AI. All rights reserved.</span>

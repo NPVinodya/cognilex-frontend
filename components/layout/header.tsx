@@ -1,22 +1,29 @@
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Scale, LogIn, UserPlus, LogOut, Home, Info, Briefcase, Users, Mail, Menu, X, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Header() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuth();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<{ name: string } | null>(null);
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    // Add actual logout logic later
+  };
 
   const navItems = [
     { name: 'Home', icon: Home, path: '/' },
     { name: 'About', icon: Info, path: '/about' },
-    { 
-      name: 'Services', 
-      icon: Briefcase, 
+    {
+      name: 'Services',
+      icon: Briefcase,
       dropdown: [
         { name: 'Find Lawyers', path: '/appointmentFind' },
         { name: 'AI Legal Chat', path: '/chat' },
@@ -28,20 +35,20 @@ export default function Header() {
   ];
 
   return (
-    <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 shadow-xl sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
+    <header className="bg-slate-900 border-b border-slate-800 shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
-          <button 
-            onClick={() => router.push('/')} 
+          <button
+            onClick={() => router.push('/')}
             className="flex items-center space-x-3 group transition-transform hover:scale-105 duration-300"
           >
             <div className="bg-white p-2.5 rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:rotate-6">
-              <Scale className="w-8 h-8 text-blue-600" />
+              <Scale className="w-8 h-8 text-amber-600" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">CogniLex AI</h1>
-              <p className="text-xs text-blue-100 font-medium">Sri Lankan Law Assistant</p>
+              <p className="text-xs text-slate-300 font-medium">Sri Lankan Law Assistant</p>
             </div>
           </button>
 
@@ -60,7 +67,7 @@ export default function Header() {
                     <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {servicesOpen && (
-                    <div 
+                    <div
                       onMouseEnter={() => setServicesOpen(true)}
                       onMouseLeave={() => setServicesOpen(false)}
                       className="absolute top-full mt-2 w-48 bg-white rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200"
@@ -72,7 +79,7 @@ export default function Header() {
                             router.push(dropItem.path);
                             setServicesOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200 font-medium"
+                          className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors duration-200 font-medium"
                         >
                           {dropItem.name}
                         </button>
@@ -99,7 +106,7 @@ export default function Header() {
               <>
                 <div className="flex items-center space-x-3 px-4 py-2 bg-white/10 rounded-lg backdrop-blur-sm">
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-bold text-sm">
+                    <span className="text-amber-600 font-bold text-sm">
                       {user?.name?.charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -124,7 +131,7 @@ export default function Header() {
                 </button>
                 <button
                   onClick={() => router.push('/register')}
-                  className="flex items-center space-x-2 px-5 py-2.5 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-105"
+                  className="flex items-center space-x-2 px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg hover:scale-105"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>Register</span>
@@ -190,13 +197,13 @@ export default function Header() {
                   </button>
                 )
               ))}
-              
+
               <div className="pt-4 border-t border-white/20 space-y-2">
                 {isAuthenticated ? (
                   <>
                     <div className="flex items-center space-x-3 px-4 py-3 bg-white/10 rounded-lg">
                       <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-bold text-sm">
+                        <span className="text-amber-600 font-bold text-sm">
                           {user?.name?.charAt(0).toUpperCase()}
                         </span>
                       </div>
@@ -230,7 +237,7 @@ export default function Header() {
                         router.push('/register');
                         setMobileMenuOpen(false);
                       }}
-                      className="flex items-center space-x-2 w-full px-4 py-3 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-all duration-300 font-medium"
+                      className="flex items-center space-x-2 w-full px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-300 font-medium"
                     >
                       <UserPlus className="w-5 h-5" />
                       <span>Register</span>

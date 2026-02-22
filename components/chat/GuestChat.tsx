@@ -2,16 +2,20 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useChat } from '@/hooks/useChat';
+
 import MessageBubble from './MessageBubble';
 import { MessageSquare, Send, FileText } from 'lucide-react';
 import { GUEST_MESSAGE_LIMIT } from '@/lib/constants';
 
 export default function GuestChat() {
   const router = useRouter();
-  const { messages, loading, guestMessageCount, sendMessage, shouldPromptRegistration } = useChat();
   const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [guestMessageCount, setGuestMessageCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const shouldPromptRegistration = guestMessageCount >= GUEST_MESSAGE_LIMIT;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -19,8 +23,31 @@ export default function GuestChat() {
 
   const handleSend = async () => {
     if (!input.trim() || shouldPromptRegistration) return;
-    await sendMessage(input.trim(), true);
+    
+    // Add user message to UI
+    const userMessage = {
+      id: Date.now().toString(),
+      text: input.trim(),
+      isUser: true,
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setGuestMessageCount(prev => prev + 1);
     setInput('');
+    setLoading(true);
+
+    // Simulate response (replace with actual API call later)
+    setTimeout(() => {
+      const botMessage = {
+        id: (Date.now() + 1).toString(),
+        text: 'This is a demo response. Connect to chatAPI to get actual responses.',
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, botMessage]);
+      setLoading(false);
+    }, 1000);
   };
 
   return (
@@ -60,7 +87,7 @@ export default function GuestChat() {
         <div ref={messagesEndRef} />
       </div>
 
-<div className="space-y-3">
+      <div className="space-y-3">
         <div className="flex items-center gap-3">
           <input
             type="text"
@@ -77,12 +104,16 @@ export default function GuestChat() {
             disabled={shouldPromptRegistration || loading || !input.trim()}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {loading ? 'Sending...' : 'Send'}
+           {loading ? (
+              <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div></>
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
           </button>
         </div>
         {!shouldPromptRegistration && (
           <p className="text-center text-sm text-gray-500">
-            {GUEST_MESSAGE_LIMIT - (guestMessageCount || 0)} free questions remaining
+            {GUEST_MESSAGE_LIMIT - guestMessageCount} free questions remaining
           </p>
         )}
       </div>
@@ -90,4 +121,3 @@ export default function GuestChat() {
   );
 }
 
-    
