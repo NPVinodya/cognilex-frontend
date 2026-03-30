@@ -1,7 +1,7 @@
 "use client";
 
-import LawyerDashboard from "@/legacy_pages/lawyer_Dashboard";
+import LawyerDashboard from "@/legacy_pages/lawyerDashboard/dashboard";
 
 export default function LawyerDashboardPage() {
-  return <LawyerDashboard user={{ name: "John Doe" }} />;
+  return <LawyerDashboard />;
 }

@@ -52,7 +52,7 @@ export default function LawyerProfilePage() {
         <Header />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#FF9000] border-t-transparent mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
             <p className="text-slate-600 font-medium">Loading Profile...</p>
           </div>
         </div>
@@ -67,11 +67,11 @@ export default function LawyerProfilePage() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center bg-white p-10 rounded-2xl shadow-sm border border-slate-100 max-w-md w-full mx-4">
             <AlertCircle className="w-16 h-16 text-rose-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-[#181B25] mb-2">Lawyer Not Found</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Lawyer Not Found</h2>
             <p className="text-slate-600 mb-8">The profile you requested is unavailable or has been removed.</p>
             <button 
               onClick={() => router.push('/lawyer')}
-              className="w-full px-6 py-3 bg-[#181B25] hover:bg-[#0e1017] text-white rounded-xl font-bold transition"
+              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition"
             >
               Browse Valid Lawyers
             </button>
@@ -82,14 +82,14 @@ export default function LawyerProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] pb-20 font-sans">
+    <div className="min-h-screen bg-slate-50 pb-20 font-sans">
       <Header />
 
       {/* Hero Banner Area */}
-      <div className="bg-[#181B25] h-64 w-full relative">
-         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent"></div>
+      <div className="bg-slate-900 h-64 w-full relative">
+         <div className="absolute inset-0 bg-blue-900/40 mix-blend-multiply"></div>
          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 relative z-10">
-            <button onClick={() => router.push('/lawyer')} className="text-slate-400 hover:text-white flex items-center gap-2 text-sm font-bold transition w-fit">
+            <button onClick={() => router.push('/lawyer')} className="text-slate-300 hover:text-white flex items-center gap-2 text-sm font-bold transition w-fit">
               <ArrowLeft className="w-4 h-4" /> Back to Lawyers
             </button>
          </div>
@@ -98,7 +98,7 @@ export default function LawyerProfilePage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 relative z-20">
         
         {/* Main Profile Header Card */}
-        <div className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] border border-slate-100 p-6 md:p-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8">
            <div className="flex flex-col md:flex-row gap-8 items-start">
              
              {/* Avatar Box */}
@@ -117,8 +117,8 @@ export default function LawyerProfilePage() {
                <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h1 className="text-3xl font-bold text-[#181B25] tracking-tight">{lawyer.fullName}</h1>
-                      <ShieldCheck className="w-6 h-6 text-[#FF9000]" />
+                      <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{lawyer.fullName}</h1>
+                      <ShieldCheck className="w-6 h-6 text-blue-600" />
                     </div>
                     <p className="text-slate-600 text-lg font-medium">{lawyer.practiceAreas?.join(', ') || 'Legal Counsel'}</p>
                     <div className="flex items-center gap-4 mt-4 text-sm text-slate-500 font-medium">
@@ -129,7 +129,7 @@ export default function LawyerProfilePage() {
                   
                   <div className="flex items-center gap-2">
                     <div className="px-4 py-2 bg-slate-50 text-slate-700 rounded-lg text-sm font-bold border border-slate-200 flex items-center gap-2">
-                      <Scale className="w-4 h-4 text-[#FF9000]" />
+                      <Scale className="w-4 h-4 text-blue-600" />
                       BAR: {lawyer.barCouncilNumber}
                     </div>
                   </div>
@@ -145,9 +145,9 @@ export default function LawyerProfilePage() {
             
             {/* About Section */}
             {lawyer.bio && (
-              <div className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] border border-slate-100 p-6 md:p-8">
-                <h3 className="text-lg font-bold text-[#181B25] mb-4 flex items-center gap-2">
-                  <User className="w-5 h-5 text-[#FF9000]" /> Professional Overview
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" /> Professional Overview
                 </h3>
                 <p className="text-slate-600 leading-relaxed min-h-[100px]">{lawyer.bio}</p>
               </div>
@@ -155,14 +155,14 @@ export default function LawyerProfilePage() {
 
             {/* Sessions Box */}
             <div id="booking-section">
-              <h3 className="text-lg font-bold text-[#181B25] mb-4 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#FF9000]" /> Available Sessions
+              <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" /> Available Sessions
               </h3>
 
-              <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-6 flex gap-3 text-orange-800">
-                <Info className="w-5 h-5 shrink-0 text-[#FF9000] mt-0.5" />
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 flex gap-3 text-blue-800">
+                <Info className="w-5 h-5 shrink-0 text-blue-600 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-bold text-orange-900 mb-1">Important Consultation Notice</p>
+                  <p className="font-bold text-blue-900 mb-1">Important Consultation Notice</p>
                   <p>All consultations require prior documentation matching. No cancellations or refunds can be issued without direct permission from the respective lawyer.</p>
                 </div>
               </div>
@@ -173,15 +173,15 @@ export default function LawyerProfilePage() {
                   const availableSlots = session.total - session.active;
 
                   return (
-                    <div key={session.id} className="bg-white border text-left border-slate-100 hover:border-orange-300 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] hover:shadow-lg transition-all rounded-2xl p-5 md:p-6 flex flex-col md:flex-row gap-6 md:items-center">
+                    <div key={session.id} className="bg-white border text-left border-slate-200 hover:border-blue-300 shadow-sm hover:shadow-md transition-all rounded-2xl p-5 md:p-6 flex flex-col md:flex-row gap-6 md:items-center">
                        
                        <div className="flex items-center gap-5 w-48 shrink-0">
                          <div className="bg-slate-50 border border-slate-200 text-center rounded-2xl p-3 min-w-[72px]">
-                           <div className="text-[26px] font-black text-[#181B25] leading-none">{new Date(session.date).getDate()}</div>
+                           <div className="text-[26px] font-black text-slate-900 leading-none">{new Date(session.date).getDate()}</div>
                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{new Date(session.date).toLocaleString('default', { month: 'short' })}</div>
                          </div>
                          <div>
-                            <p className="font-bold text-[#181B25] text-[15px]">{session.day}</p>
+                            <p className="font-bold text-slate-900 text-[15px]">{session.day}</p>
                             <p className="text-[13px] font-bold text-slate-500 flex items-center gap-1.5 mt-1">
                               <Clock className="w-3.5 h-3.5 text-slate-400" /> {session.time}
                             </p>
@@ -204,7 +204,7 @@ export default function LawyerProfilePage() {
                          {isAvailable ? (
                              <button 
                                onClick={() => router.push(`/checkout?lawyer=${params.id}&slot=${session.id}`)}
-                               className="w-full md:w-auto px-7 py-3 bg-[#FF9000] hover:bg-[#E68200] text-white rounded-full font-bold shadow-md shadow-orange-600/20 active:scale-95 transition-all text-sm"
+                               className="w-full md:w-auto px-7 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-sm active:scale-95 transition-all text-sm"
                              >
                                Book Now
                              </button>
@@ -216,7 +216,7 @@ export default function LawyerProfilePage() {
                        </div>
                     </div>
                   );
-                })}
+                 })}
               </div>
 
             </div>
@@ -226,60 +226,60 @@ export default function LawyerProfilePage() {
           <div className="space-y-6 lg:sticky lg:top-6">
             
             {/* Fee Card */}
-            <div className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="p-6">
                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Consultation Fee</p>
-                <div className="flex items-end gap-2 text-[#181B25]">
+                <div className="flex items-end gap-2 text-slate-900">
                   <span className="text-[32px] font-black tracking-tight leading-none">LKR {lawyer.consultationFee?.toLocaleString() || '5,000'}</span>
                 </div>
               </div>
               <div className="bg-slate-50 p-4 border-t border-slate-100 text-center">
-                 <button onClick={() => { document.getElementById('booking-section')?.scrollIntoView({ behavior: 'smooth' }) }} className="w-full py-3.5 px-4 bg-[#181B25] hover:bg-[#0e1017] text-white rounded-xl font-bold transition text-sm shadow-sm flex items-center justify-center gap-2">
+                 <button onClick={() => { document.getElementById('booking-section')?.scrollIntoView({ behavior: 'smooth' }) }} className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold transition text-sm flex items-center justify-center gap-2">
                    <Calendar className="w-4 h-4" /> View Availability
                  </button>
               </div>
             </div>
 
             {/* Contact Details */}
-            <div className="bg-white rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] border border-slate-100 p-6">
-               <h3 className="font-bold text-[#181B25] text-base mb-5 flex items-center gap-2">
-                 <Phone className="w-5 h-5 text-[#FF9000]" /> Contact Info
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+               <h3 className="font-bold text-slate-900 text-base mb-5 flex items-center gap-2">
+                 <Phone className="w-5 h-5 text-blue-600" /> Contact Info
                </h3>
                <ul className="space-y-5">
                  <li className="flex items-start gap-4">
-                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                     <Mail className="w-5 h-5 text-[#FF9000]" />
+                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                     <Mail className="w-5 h-5 text-blue-600" />
                    </div>
                    <div>
                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Email</p>
-                     <p className="text-sm text-[#181B25] font-bold break-all">{lawyer.email}</p>
+                     <p className="text-sm text-slate-900 font-bold break-all">{lawyer.email}</p>
                    </div>
                  </li>
                  <li className="flex items-start gap-4">
-                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                     <Phone className="w-5 h-5 text-[#FF9000]" />
+                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                     <Phone className="w-5 h-5 text-blue-600" />
                    </div>
                    <div>
                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Phone</p>
-                     <p className="text-sm text-[#181B25] font-bold">{lawyer.phone || '+94 7X XXX XXXX'}</p>
+                     <p className="text-sm text-slate-900 font-bold">{lawyer.phone || '+94 7X XXX XXXX'}</p>
                    </div>
                  </li>
                  <li className="flex items-start gap-4">
-                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                     <MapPin className="w-5 h-5 text-[#FF9000]" />
+                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                     <MapPin className="w-5 h-5 text-blue-600" />
                    </div>
                    <div>
                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Location</p>
-                     <p className="text-sm text-[#181B25] font-bold">{lawyer.province} Province</p>
+                     <p className="text-sm text-slate-900 font-bold">{lawyer.province} Province</p>
                    </div>
                  </li>
                </ul>
             </div>
 
-            <div className="text-center bg-white shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] rounded-2xl p-6 border border-slate-100">
-              <ShieldCheck className="w-10 h-10 text-[#FF9000] mx-auto mb-3" />
-              <p className="text-sm text-[#181B25] font-bold mb-1">Need assistance or have questions?</p>
-              <button className="text-sm font-bold text-[#FF9000] hover:text-[#E68200] hover:underline underline-offset-4">Contact CogniLex Support</button>
+            <div className="text-center bg-white shadow-sm rounded-2xl p-6 border border-slate-200">
+              <ShieldCheck className="w-10 h-10 text-blue-600 mx-auto mb-3" />
+              <p className="text-sm text-slate-900 font-bold mb-1">Need assistance or have questions?</p>
+              <button className="text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline underline-offset-4">Contact CogniLex Support</button>
             </div>
 
           </div>
