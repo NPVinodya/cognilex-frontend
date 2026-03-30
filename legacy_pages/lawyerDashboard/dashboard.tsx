@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Edit, Trash2,
     Users, TrendingUp, Star, Settings, ChevronRight, ChevronLeft
@@ -28,44 +28,54 @@ const WEEK_DATES = [
     { day: 'Sun', date: 15, active: false },
 ];
 
+
+
+
 export default function LawyerDashboard() {
 
-    const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([
-        {
-            id: '1',
-            date: '2026-03-12',
-            time: '09:00 AM - 10:00 AM',
-            location: 'Colombo Inner Office',
-            isBooked: true,
-            clientName: 'Sarah Jenkins',
-            type: 'Consultation',
-        },
-        {
-            id: '2',
-            date: '2026-03-12',
-            time: '11:00 AM - 12:30 PM',
-            location: 'Supreme Court - Hall B',
-            isBooked: true,
-            clientName: 'Corporate Tech Inc.',
-            type: 'Court',
-        },
-        {
-            id: '3',
-            date: '2026-03-12',
-            time: '02:00 PM - 03:00 PM',
-            location: 'Colombo CBD Office',
-            isBooked: false,
-            type: 'Consultation',
-        },
-        {
-            id: '4',
-            date: '2026-03-12',
-            time: '04:00 PM - 05:30 PM',
-            location: 'Colombo CBD Office',
-            isBooked: false,
-            type: 'Meeting',
-        },
-    ]);
+    const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
+
+
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSlots = async () => {
+            try {
+                const storedUser = localStorage.getItem("user");
+                if (!storedUser) {
+                    setLoading(false);
+                    return;
+                }
+                
+                const user = JSON.parse(storedUser);
+                const lawyerId = user.id || user._id; // Adjust based on your auth object
+
+                if (!lawyerId) {
+                    console.error("Lawyer ID not found.");
+                    setLoading(false);
+                    return;
+                }
+                
+                const response = await fetch(`http://127.0.0.1:8000/api/lawyer/slots/${lawyerId}`);
+                if (!response.ok) throw new Error("Failed to fetch");
+                
+                const data = await response.json();
+                
+                // Set slots safely ensuring it is an array
+                setAvailabilitySlots(Array.isArray(data) ? data : (data.slots || []));
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching slots:", error);
+                setAvailabilitySlots([]);
+                setLoading(false);
+            }
+        };
+
+        fetchSlots();
+    }, []);
+
+
+    if (loading) return <div className="p-10">Loading Dashboard...</div>;
 
     const handleDeleteSlot = (id: string) => {
         setAvailabilitySlots(availabilitySlots.filter(slot => slot.id !== id));

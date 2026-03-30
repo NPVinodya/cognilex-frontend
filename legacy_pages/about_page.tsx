@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import {
@@ -182,12 +183,12 @@ export default function AboutPage() {
                 Join thousands of Sri Lankans who trust our authoritative platform for their professional legal needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="px-8 py-4 bg-amber-600 text-white rounded-xl font-bold text-lg hover:bg-amber-700 transition shadow-md">
+                <Link href="/" className="px-8 py-4 flex items-center justify-center bg-amber-600 text-white rounded-xl font-bold text-lg hover:bg-amber-700 transition shadow-md">
                   Start Free Consultation
-                </button>
-                <button className="px-8 py-4 bg-transparent border-2 border-slate-600 text-white rounded-xl font-bold text-lg hover:bg-slate-800 transition">
+                </Link>
+                <Link href="/lawyer" className="px-8 py-4 flex items-center justify-center bg-transparent border-2 border-slate-600 text-white rounded-xl font-bold text-lg hover:bg-slate-800 transition">
                   Browse Lawyers
-                </button>
+                </Link>
               </div>
             </div>
           </div>

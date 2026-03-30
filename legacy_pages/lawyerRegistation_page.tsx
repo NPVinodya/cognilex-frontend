@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Scale, 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  GraduationCap, 
-  Award, 
+import {
+  Scale,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  Award,
   Calendar,
   FileText,
   Shield,
@@ -38,19 +38,19 @@ export default function LawyerRegistrationPage() {
     province: '',
     nicNumber: '', // NIC Number
     lawyerId: '', // Lawyer Registration ID
-    
+
     // Professional Information
     barCouncilNumber: '',
     specialization: '',
     yearsOfExperience: '',
     lawFirm: '',
     languagesSpoken: '',
-    
+
     // Education
     lawSchool: '',
     graduationYear: '',
     additionalQualifications: '',
-    
+
     // Practice Details
     practiceAreas: [] as string[],
     consultationFee: '',
@@ -118,8 +118,8 @@ export default function LawyerRegistrationPage() {
     const reader = new FileReader();
     reader.onloadend = () => {
       const preview = reader.result as string;
-      
-      switch(type) {
+
+      switch (type) {
         case 'profile':
           setProfilePhoto(file);
           setProfilePhotoPreview(preview);
@@ -166,7 +166,7 @@ export default function LawyerRegistrationPage() {
     try {
       // Create FormData for file upload
       const formDataToSend = new FormData();
-      
+
       // Append all form fields
       Object.keys(formData).forEach(key => {
         if (key === 'practiceAreas') {
@@ -219,13 +219,13 @@ export default function LawyerRegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12 px-4">
+    <div className="min-h-screen bg-slate-50 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Scale className="w-8 h-8 text-white" />
+            <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-md border border-slate-800">
+              <Scale className="w-8 h-8 text-amber-500" />
             </div>
             <h1 className="text-4xl font-black text-gray-900">Join as a Lawyer</h1>
           </div>
@@ -620,11 +620,10 @@ export default function LawyerRegistrationPage() {
                   key={area}
                   type="button"
                   onClick={() => handlePracticeAreaToggle(area)}
-                  className={`px-4 py-3 rounded-xl border-2 transition font-medium text-sm ${
-                    formData.practiceAreas.includes(area)
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'
-                  }`}
+                  className={`px-4 py-3 rounded-xl border transition font-medium text-sm ${formData.practiceAreas.includes(area)
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-slate-50 text-slate-700 border-slate-300 hover:border-amber-500 hover:bg-white'
+                    }`}
                 >
                   {area}
                 </button>
@@ -688,7 +687,7 @@ export default function LawyerRegistrationPage() {
             <button
               type="submit"
               disabled={loading || formData.practiceAreas.length === 0}
-              className="flex-1 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
+              className="flex-1 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
