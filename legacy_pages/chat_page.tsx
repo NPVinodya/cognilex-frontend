@@ -1,6 +1,10 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import page from "@/app/page";
+import SettingsModal from "@/components/chat/SettingsModal";
+import CorporatePlanModal from "@/components/chat/CorporatePlanModal";
+import SupportDeskModal from "@/components/chat/SupportDeskModal";
 
 export default function CogniLexAI() {
   const [question, setQuestion] = useState("");
@@ -14,13 +18,16 @@ export default function CogniLexAI() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("General");
-  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(null);
+  const [showCorporatePlan, setShowCorporatePlan] = useState(false);
+  const [showSupportDesk, setShowSupportDesk] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string; userrole: string } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const BASE_URL = "https://unbonneted-stratagemical-hal.ngrok-free.dev";
+
 
   // --- Voice Controls ---
   const speak = (text: string) => {
@@ -61,6 +68,7 @@ export default function CogniLexAI() {
 
     const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
     const storedUser = localStorage.getItem("user");
+    const accessToken = localStorage.getItem("accessToken");
 
     if (!isAuthenticated || !storedUser) {
       router.push("/login");
@@ -69,9 +77,26 @@ export default function CogniLexAI() {
 
     try {
       const parsed = JSON.parse(storedUser);
+      let tokenRole = "";
+
+      // Decode JWT Access Token to extract the role dynamically
+      if (accessToken) {
+        try {
+          const base64Url = accessToken.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          tokenRole = JSON.parse(jsonPayload).role;
+        } catch (e) {
+          console.error("Could not parse JWT token for role", e);
+        }
+      }
+
       setCurrentUser({
         name: parsed.name || parsed.email || "User",
         email: parsed.email || "",
+        userrole: tokenRole || parsed.role || "Users",
       });
     } catch (error) {
       console.error("Failed to parse stored user", error);
@@ -94,6 +119,10 @@ export default function CogniLexAI() {
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("tokenType");
+
+      // Crucial: Clear cookies so the middleware proxy knows you are logged out
+      document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
     setCurrentUser(null);
     router.push("/login");
@@ -182,20 +211,6 @@ export default function CogniLexAI() {
               <span className="text-sm font-medium">Legal Chat</span>
             </div>
 
-            <div onClick={() => fileInputRef.current?.click()} className="p-3 hover:bg-white/5 rounded-xl flex items-center gap-3 cursor-pointer transition group border border-transparent hover:border-slate-700">
-              <span className="text-lg text-slate-400 group-hover:scale-110 transition">📄</span>
-              <div>
-                <p className="text-sm font-medium text-slate-300">Case Analyzer</p>
-                <p className="text-[10px] text-slate-500 tracking-tight">Upload Evidence / PDF</p>
-              </div>
-              <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".pdf" />
-            </div>
-
-            <div onClick={fetchStats} className={`p-3 rounded-xl flex items-center gap-3 cursor-pointer transition ${activeTab === 'dashboard' ? 'bg-slate-700/50 border border-slate-600/50 text-slate-200' : 'hover:bg-white/5 border border-transparent'}`}>
-              <span className="text-lg">📊</span>
-              <span className="text-sm font-medium">Activity Log</span>
-            </div>
-
             <div className="pt-6 mt-6 border-t border-slate-800">
               <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold px-2 mb-3">Professional Network</p>
 
@@ -207,21 +222,32 @@ export default function CogniLexAI() {
                   ⚖️
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-300">Find Advocate</p>
+                  <p className="text-sm font-medium text-slate-300">Find Lawyer</p>
                   <p className="text-[10px] text-slate-500 tracking-tight">Directory of verified experts</p>
                 </div>
               </div>
 
               <div
-                onClick={() => router.push('/lawyerRegistation')}
+                onClick={() => {
+                  if (currentUser?.userrole === 'lawyer') {
+                    router.push('/lawyerDashboard')
+                  } else {
+                    router.push('/lawyerRegistation')
+                  }
+                }}
+
                 className="p-3 hover:bg-white/5 rounded-xl flex items-center gap-3 cursor-pointer transition group border border-transparent hover:border-slate-500/30"
               >
                 <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-lg shadow-lg group-hover:scale-110 transition">
-                  🎓
+                  {currentUser?.userrole === 'lawyer' ? '🏛️' : '🎓'}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-300">Join Platform</p>
-                  <p className="text-[10px] text-slate-500 tracking-tight">Register your legal practice</p>
+                  <p className="text-sm font-medium text-slate-300">
+                    {currentUser?.userrole === 'lawyer' ? 'Lawyer Dashboard' : 'Join Platform'}
+                  </p>
+                  <p className="text-[10px] text-slate-500 tracking-tight">
+                    {currentUser?.userrole === 'lawyer' ? 'Manage your legal practice' : 'Register your legal practice'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -237,22 +263,22 @@ export default function CogniLexAI() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white leading-none">{currentUser?.name || "User"}</p>
-                  <p className="text-[10px] text-slate-400">{currentUser?.email || ""}</p>
+                  <p className="text-[10px] text-slate-400 my-0.5">{currentUser?.email || ""}</p>
+                  <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-amber-500/20 text-amber-500 text-[9px] font-bold rounded border border-amber-500/30 uppercase tracking-widest">
+                    {currentUser?.userrole}
+                  </span>
                 </div>
               </div>
               <div className="p-1.5 space-y-0.5">
-                <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition text-[11px] text-slate-300">
+                <button onClick={() => { setShowCorporatePlan(true); setShowUserMenu(false); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition text-[11px] text-slate-300">
                   <span className="text-sm">✨</span> Corporate Plan
                 </button>
-                <button className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition text-[11px] text-slate-300">
-                  <span className="text-sm">🔄</span> Preferences
-                </button>
-                <button onClick={() => { setShowSettings(true); setShowUserMenu(false); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition text-[11px] text-slate-300">
+                <button onClick={() => { setShowSettings(true); setActiveSettingsTab("General"); setShowUserMenu(false); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition text-[11px] text-slate-300">
                   <span className="text-sm">⚙️</span> Platform Settings
                 </button>
               </div>
               <div className="p-1.5 border-t border-slate-700">
-                <button className="w-full flex items-center justify-between gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition text-[11px] text-slate-300">
+                <button onClick={() => { setShowSupportDesk(true); setShowUserMenu(false); }} className="w-full flex items-center justify-between gap-3 px-3 py-2 hover:bg-slate-700 rounded-lg transition text-[11px] text-slate-300">
                   <span className="flex items-center gap-3"><span>🎧</span> Support Desk</span>
                   <span>›</span>
                 </button>
@@ -278,7 +304,10 @@ export default function CogniLexAI() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate leading-tight">{currentUser?.name || "User"}</p>
-              <p className="text-[10px] text-slate-400 truncate">{currentUser?.email || ""}</p>
+              <p className="text-[10px] text-slate-400 truncate mb-1">{currentUser?.email || ""}</p>
+              <span className="inline-block px-2 py-0.5 bg-slate-800 text-slate-300 text-[9px] font-bold rounded-full border border-slate-700 uppercase tracking-widest shadow-sm">
+                {currentUser?.userrole}
+              </span>
             </div>
             <button className="px-3 py-1 bg-amber-600 text-white text-[10px] font-bold rounded-full hover:bg-amber-700 transition shrink-0 shadow-sm border border-amber-700">
               Upgrade
@@ -292,45 +321,21 @@ export default function CogniLexAI() {
 
         {/* Settings Modal */}
         {showSettings && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-[2rem] w-full max-w-2xl h-[540px] overflow-hidden shadow-2xl flex flex-col">
-              <div className="flex-1 flex overflow-hidden">
-                <div className="w-52 border-r border-slate-800 p-4 flex flex-col bg-slate-900">
-                  <button onClick={() => setShowSettings(false)} className="mb-6 p-2 text-slate-400 hover:text-white transition w-fit">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                  </button>
-                  <nav className="space-y-1">
-                    {["General", "Notifications", "Personalization", "Apps", "Data controls", "Security", "Account"].map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveSettingsTab(tab)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold tracking-wide transition ${activeSettingsTab === tab ? "bg-slate-800 text-amber-500" : "text-slate-400 hover:text-slate-300 hover:bg-slate-800/50"}`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </nav>
-                </div>
-                <div className="flex-1 p-8 overflow-y-auto">
-                  <h2 className="text-xl font-bold text-white mb-8">{activeSettingsTab}</h2>
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                      <span className="text-sm font-medium text-slate-300">Appearance</span>
-                      <select className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none">
-                        <option>System Default</option><option>Dark Mode</option><option>Light Mode</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                      <span className="text-sm font-medium text-slate-300">Language</span>
-                      <select className="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white outline-none">
-                        <option>English</option><option>Sinhala</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SettingsModal 
+            onClose={() => setShowSettings(false)} 
+            activeTab={activeSettingsTab} 
+            setActiveTab={setActiveSettingsTab} 
+          />
+        )}
+
+        {/* Corporate Plan Modal */}
+        {showCorporatePlan && (
+          <CorporatePlanModal onClose={() => setShowCorporatePlan(false)} />
+        )}
+
+        {/* Support Desk Modal */}
+        {showSupportDesk && (
+          <SupportDeskModal onClose={() => setShowSupportDesk(false)} />
         )}
 
 

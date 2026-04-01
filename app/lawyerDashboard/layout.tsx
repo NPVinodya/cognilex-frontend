@@ -1,0 +1,112 @@
+'use client';
+
+import React from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { 
+  Scale, Calendar as CalendarIcon, Users, Briefcase, FileText, 
+  MessageSquare, TrendingUp, Settings, LayoutDashboard, Search, Bell 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+const SIDEBAR_NAV = [
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/lawyerDashboard/dashboard', badge: null },
+  { name: 'Appointments', icon: CalendarIcon, path: '/lawyerDashboard/appointments', badge: '3' },
+  { name: 'Clients', icon: Users, path: '/lawyerDashboard/clients', badge: null },
+  { name: 'Cases', icon: Briefcase, path: '/lawyerDashboard/cases', badge: null },
+  { name: 'Documents', icon: FileText, path: '/lawyerDashboard/documents', badge: null },
+  { name: 'Messages', icon: MessageSquare, path: '/lawyerDashboard/messages', badge: '5' },
+  { name: 'Analytics', icon: TrendingUp, path: '/lawyerDashboard/analytics', badge: null },
+  { name: 'Settings', icon: Settings, path: '/lawyerDashboard/settings', badge: null },
+];
+
+export default function LawyerDashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  return (
+    <div className="flex min-h-screen bg-[#F8F9FA] font-sans">
+      
+      {/* ---------------- S I D E B A R ---------------- */}
+      <aside className="w-64 bg-[#181B25] text-slate-300 hidden lg:flex flex-col flex-shrink-0 shadow-xl overflow-y-auto">
+        <div className="h-20 flex items-center px-6 sticky top-0 bg-[#181B25] z-10">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="bg-[#FF9000] p-1.5 rounded-lg flex items-center justify-center">
+              <Scale className="h-5 w-5 text-white" strokeWidth={2.5} />
+            </div>
+            <span className="font-bold text-xl tracking-tight text-white">CogniLex AI</span>
+          </Link>
+        </div>
+        
+        <div className="flex-1 py-6 px-4">
+          <p className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">Main Menu</p>
+          <nav className="space-y-1">
+            {SIDEBAR_NAV.map((item) => {
+              const isActive = pathname?.startsWith(item.path);
+              return (
+              <Link 
+                key={item.name} 
+                href={item.path}
+                className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                  isActive 
+                    ? 'bg-[#FF9000] text-white shadow-md shadow-orange-900/20' 
+                    : 'hover:bg-white/5 hover:text-white text-slate-400'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <item.icon className="h-4 w-4" />
+                  <span className="font-semibold text-sm">{item.name}</span>
+                </div>
+                {item.badge && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-[#FF9000] text-white'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
+              </Link>
+            )})}
+          </nav>
+        </div>
+
+        <div className="p-4 mt-auto">
+          <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition">
+            <img src="https://i.pravatar.cc/150?u=lawyer" alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#2A2E3D]" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white truncate">Atty. P. Vinodya</p>
+              <p className="text-xs text-slate-500 truncate">Senior Counsel</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ---------------- M A I N  C O N T E N T ---------------- */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        {/* Top Header */}
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
+          <div className="flex items-center gap-4 max-w-lg w-full">
+            <div className="relative w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search appointments, clients, or cases..." 
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF9000] focus:bg-white transition placeholder-slate-400 font-medium"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-5">
+            <button className="relative text-slate-500 hover:text-slate-800 transition">
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+            </button>
+          </div>
+        </header>
+
+        {/* Dynamic Page Content */}
+        <div className="flex-1 overflow-y-auto p-8 lg:p-10">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
