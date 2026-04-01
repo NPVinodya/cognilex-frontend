@@ -36,6 +36,11 @@ export default function LoginPage() {
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('accessToken', access_token);
       localStorage.setItem('tokenType', token_type);
+
+      // VERY IMPORTANT: Set cookies so proxy.ts middleware knows we are authenticated!
+      document.cookie = `isAuthenticated=true; path=/; max-age=604800`;
+      document.cookie = `accessToken=${access_token}; path=/; max-age=604800`;
+
       router.push('/chat');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Login failed. Please try again.');
