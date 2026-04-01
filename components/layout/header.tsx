@@ -15,7 +15,18 @@ export default function Header() {
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
-    // Add actual logout logic later
+    
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("user");
+      localStorage.removeItem("isAuthenticated");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("tokenType");
+      
+      // Crucial: Clear cookies so the middleware proxy knows you are logged out
+      document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+    router.push("/login");
   };
 
   const navItems = [
