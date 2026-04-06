@@ -3,11 +3,24 @@ import type { NextRequest } from "next/server";
 
 export default function proxy(request: NextRequest) {
     const path = request.nextUrl.pathname;
+    const allCookies = request.cookies.getAll();
+
+    const getCookieValue = (name: string) => request.cookies.get(name)?.value?.trim();
+    const hasNonEmptyCookie = (name: string) => {
+        const value = getCookieValue(name);
+        return Boolean(value && value !== "undefined" && value !== "null");
+    };
+    const isTrueCookie = (name: string) => getCookieValue(name) === "true";
+
+    const hasAppwriteSessionCookie = allCookies.some((cookie) =>
+        cookie.name.startsWith("a_session_") || cookie.name.startsWith("a_session_legacy_")
+    );
 
     // --- ADMIN AUTHENTICATION CHECKS ---
     // Check for tokens that you set in `adminLogin.tsx`
-    const adminToken = request.cookies.get("adminAccessToken")?.value;
-    const isAdminAuthenticated = request.cookies.get("isAdminAuthenticated")?.value === "true";
+    const hasAdminToken = hasNonEmptyCookie("adminAccessToken");
+    const isAdminAuthenticated = isTrueCookie("isAdminAuthenticated");
+    const isAdminLoggedIn = hasAdminToken || isAdminAuthenticated;
 
     // Define what an admin route is
     const isAdminRoute = path.startsWith("/adminDashboard") || path.startsWith("/admin_Dashboard");
@@ -15,9 +28,11 @@ export default function proxy(request: NextRequest) {
 
 
     // --- REGULAR USER AUTHENTICATION CHECKS ---
-    // Check for user tokens (like in chat_page.tsx)
-    const userToken = request.cookies.get("accessToken")?.value;
-    const isUserAuthenticated = request.cookies.get("isAuthenticated")?.value === "true";
+    // These cookie names come from `legacy_pages/login_page.tsx`.
+    const hasUserToken = hasNonEmptyCookie("accessToken");
+    const isUserAuthenticated = isTrueCookie("isAuthenticated");
+    const isFromOAuth = request.nextUrl.searchParams.get("provider") === "oauth";
+    const isUserLoggedIn = hasUserToken || hasAppwriteSessionCookie || isUserAuthenticated || isFromOAuth;
 
     // Define what a regular user route is
     const isUserDashboardRoute = path.startsWith("/lawyerDashboard") || path.startsWith("/chat");
@@ -29,22 +44,22 @@ export default function proxy(request: NextRequest) {
     // ==========================================
 
     // 1. Protect Admin Routes
-    if (isAdminRoute && (!adminToken && !isAdminAuthenticated)) {
+    if (isAdminRoute && !isAdminLoggedIn) {
         return NextResponse.redirect(new URL("/admin/login", request.url));
     }
 
     // 2. Prevent logged-in Admin from seeing Admin login page
-    if (isAdminLoginRoute && (adminToken || isAdminAuthenticated)) {
+    if (isAdminLoginRoute && isAdminLoggedIn) {
         return NextResponse.redirect(new URL("/adminDashboard", request.url));
     }
 
     // 3. Protect User Routes
-    if (isUserDashboardRoute && (!userToken && !isUserAuthenticated)) {
+    if (isUserDashboardRoute && !isUserLoggedIn) {
         return NextResponse.redirect(new URL("/login", request.url));
     }
 
     // 4. Prevent logged-in User from seeing the main user login page
-    if (isUserLoginRoute && (userToken || isUserAuthenticated)) {
+    if (isUserLoginRoute && isUserLoggedIn) {
         return NextResponse.redirect(new URL("/chat", request.url));
     }
 
@@ -59,6 +74,7 @@ export const config = {
         "/chat/:path*",
         "/login",
         "/adminDashboard/:path*",
+        "/admin/login",
         "/admin/login/:path*",
     ],
 };
