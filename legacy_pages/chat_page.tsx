@@ -127,6 +127,15 @@ export default function CogniLexAI() {
 
       try {
         const parsed = JSON.parse(storedUser ?? "{}");
+        const parsedAppearance = parsed?.preferences?.appearance || "Dark Mode";
+
+        // Apply saved appearance immediately so UI does not wait for API round trip.
+        if (parsedAppearance === "Dark Mode" || parsedAppearance === "System Default") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+
         const email = parsed?.email || "";
 
         let mongoUser: any = null;
