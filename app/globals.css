@@ -123,3 +123,41 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  /* Team Color Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(217, 119, 6, 0.3); /* amber-600/30 */
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(217, 119, 6, 0.6); /* amber-600/60 */
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(217, 119, 6, 0.2); /* amber-600/20 */
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(217, 119, 6, 0.4); /* amber-600/40 */
+  }
+}
