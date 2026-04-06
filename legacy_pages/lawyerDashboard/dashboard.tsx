@@ -5,8 +5,10 @@ import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Edit, Trash2,
     Users, TrendingUp, Star, Settings, ChevronRight, ChevronLeft
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 interface AvailabilitySlot {
     id: string;
@@ -18,20 +20,13 @@ interface AvailabilitySlot {
     type?: 'Consultation' | 'Court' | 'Meeting';
 }
 
-const WEEK_DATES = [
-    { day: 'Mon', date: 9, active: false },
-    { day: 'Tue', date: 10, active: false },
-    { day: 'Wed', date: 11, active: false },
-    { day: 'Thu', date: 12, active: true },
-    { day: 'Fri', date: 13, active: false },
-    { day: 'Sat', date: 14, active: false },
-    { day: 'Sun', date: 15, active: false },
-];
+// Initial dates are now generated dynamically in the component
 
 
 
 
 export default function LawyerDashboard() {
+    const router = useRouter();
 
     const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
     const [stats, setStats] = useState<any>(null);
@@ -39,40 +34,81 @@ export default function LawyerDashboard() {
 
 
     const [loading, setLoading] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(18);
     const [isAddSlotOpen, setIsAddSlotOpen] = useState(false);
     const [newSlot, setNewSlot] = useState({ date: '', time: '', type: 'Consultation', location: '' });
     const [isSaving, setIsSaving] = useState(false);
+
+    // Calendar State
+    const [pivotDate, setPivotDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [viewMode, setViewMode] = useState<'daily' | 'all'>('daily');
+
+    const getWeekDays = (baseDate: Date) => {
+        const days = [];
+        const start = new Date(baseDate);
+        // Start from Monday of the current week (optional, let's just show 7 days from base)
+        // For the design in screenshot, it looks like a 7-day window.
+        // Let's center it or start from pivot.
+        for (let i = -3; i <= 3; i++) {
+            const d = new Date(baseDate);
+            d.setDate(baseDate.getDate() + i);
+            days.push({
+                full: d.toISOString().split('T')[0],
+                dayName: d.toLocaleString('en-US', { weekday: 'short' }),
+                dateNum: d.getDate(),
+                isToday: d.toDateString() === new Date().toDateString()
+            });
+        }
+        return days;
+    };
+
+    const weekDays = getWeekDays(pivotDate);
+
+    const shiftWeek = (direction: number) => {
+        const newPivot = new Date(pivotDate);
+        newPivot.setDate(pivotDate.getDate() + (direction * 7));
+        setPivotDate(newPivot);
+    };
+
+    const filteredSlots = availabilitySlots.filter(s => s.date === selectedDate);
 
     const fetchData = async () => {
         try {
             const storedUser = localStorage.getItem("user");
             if (!storedUser) {
+                setLoadingProgress(100);
                 setLoading(false);
                 return;
             }
-            
+
             const user = JSON.parse(storedUser);
             const lawyerId = user.id || user._id;
             if (user.name) setLawyerName(user.name.split(' ')[0]);
 
             if (!lawyerId) {
+                setLoadingProgress(100);
                 setLoading(false);
                 return;
             }
-            
+
             // Fetch Stats
+            setLoadingProgress(45);
             const statsRes = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=stats`);
             const statsData = await statsRes.json();
             if (statsData.success) setStats(statsData.stats);
 
             // Fetch Appointments
+            setLoadingProgress(78);
             const slotsRes = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=appointments`);
             const slotsData = await slotsRes.json();
             if (slotsData.success) setAvailabilitySlots(slotsData.slots || []);
-            
+
+            setLoadingProgress(100);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
+            setLoadingProgress(100);
             setLoading(false);
         }
     };
@@ -81,25 +117,45 @@ export default function LawyerDashboard() {
         fetchData();
     }, []);
 
-    if (loading) return <div className="p-10">Loading Dashboard...</div>;
+    useEffect(() => {
+        if (!loading) return;
+
+        const timer = window.setInterval(() => {
+            setLoadingProgress((prev) => (prev < 90 ? prev + 3 : prev));
+        }, 220);
+
+        return () => window.clearInterval(timer);
+    }, [loading]);
+
+    if (loading) {
+        return (
+            <div className="flex min-h-[70vh] items-center justify-center">
+                <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="mb-3 text-center text-sm font-semibold text-slate-700">Loading Lawyer Dashboard...</p>
+                    <Progress value={loadingProgress} className="h-3" />
+                    <p className="mt-3 text-center text-xs font-bold text-orange-600">{Math.round(loadingProgress)}%</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleSaveSlot = async () => {
         if (!newSlot.date || !newSlot.time) return alert("Please pick a Date and Time.");
-        
+
         setIsSaving(true);
         try {
             const storedUser = localStorage.getItem("user");
             if (!storedUser) throw new Error("User session not found.");
-            
+
             const user = JSON.parse(storedUser);
             const lawyerId = user.id || user._id;
-            
+
             if (!lawyerId) throw new Error("Lawyer ID not found in profile.");
 
             const res = await fetch('/api/lawyer/dashboard', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     lawyerId,
                     date: newSlot.date,
                     time: newSlot.time,
@@ -109,7 +165,7 @@ export default function LawyerDashboard() {
             });
 
             const data = await res.json();
-            
+
             if (res.ok && data.success) {
                 alert("Slot created successfully!");
                 fetchData();
@@ -224,33 +280,66 @@ export default function LawyerDashboard() {
                                 </h2>
                                 <p className="text-slate-500 text-sm mt-1">Manage your calendar capacity for the week.</p>
                             </div>
-                            <Button 
-                                onClick={() => setIsAddSlotOpen(true)}
-                                className="bg-[#FF9000] hover:bg-[#E68200] rounded-full shadow-md shadow-orange-600/20 text-sm h-10 px-6 gap-2 text-white font-semibold"
-                            >
-                                <Plus className="h-4 w-4" /> Add Slot
-                            </Button>
+                            <div className="flex items-center gap-3">
+                                <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
+                                    <button
+                                        onClick={() => setViewMode('daily')}
+                                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'daily' ? 'bg-white text-[#FF9000] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        Daily
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('all')}
+                                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'all' ? 'bg-white text-[#FF9000] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        All
+                                    </button>
+                                </div>
+                                <Button
+                                    onClick={() => setIsAddSlotOpen(true)}
+                                    className="bg-[#FF9000] hover:bg-[#E68200] rounded-full shadow-md shadow-orange-600/20 text-sm h-10 px-6 gap-2 text-white font-semibold"
+                                >
+                                    <Plus className="h-4 w-4" /> Add Slot
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Week Days Picker */}
                         <div className="px-6 md:px-8 py-5 border-b border-slate-100 flex items-center justify-between gap-2">
-                            <button className="p-1.5 text-slate-400 hover:text-slate-700 transition"><ChevronLeft className="w-5 h-5" /></button>
+                            <button
+                                onClick={() => shiftWeek(-1)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 transition"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
                             <div className="flex gap-2 sm:gap-4 overflow-x-auto w-full justify-between pb-1 no-scrollbar">
-                                {WEEK_DATES.map((d, i) => (
-                                    <button key={i} className={`flex flex-col items-center justify-center min-w-[56px] h-[64px] rounded-2xl border transition hover:-translate-y-0.5 ${d.active ? 'bg-[#FF9000] border-[#FF9000] text-white shadow-lg shadow-[#FF9000]/30' : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300'}`}>
-                                        <span className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${d.active ? 'text-orange-100' : 'text-slate-400'}`}>{d.day}</span>
-                                        <span className="text-xl font-bold">{d.date}</span>
-                                    </button>
-                                ))}
+                                {weekDays.map((d, i) => {
+                                    const isActive = d.full === selectedDate;
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => setSelectedDate(d.full)}
+                                            className={`flex flex-col items-center justify-center min-w-[56px] h-[64px] rounded-2xl border transition hover:-translate-y-0.5 ${isActive ? 'bg-[#FF9000] border-[#FF9000] text-white shadow-lg shadow-[#FF9000]/30' : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300'} ${d.isToday && !isActive ? 'ring-2 ring-orange-100' : ''}`}
+                                        >
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-orange-100' : 'text-slate-400'}`}>{d.dayName}</span>
+                                            <span className="text-xl font-bold">{d.dateNum}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            <button className="p-1.5 text-slate-400 hover:text-slate-700 transition"><ChevronRight className="w-5 h-5" /></button>
+                            <button
+                                onClick={() => shiftWeek(1)}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 transition"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
                         </div>
 
                         {/* Slots Timeline */}
                         <div className="p-6 md:p-8 pt-8">
                             <div className="relative border-l border-slate-200/80 ml-3 space-y-10 pb-4">
 
-                                {availabilitySlots.map((slot, index) => {
+                                {(viewMode === 'all' ? availabilitySlots : filteredSlots).length > 0 ? (viewMode === 'all' ? availabilitySlots : filteredSlots).map((slot, index) => {
                                     const isConsultation = slot.type === 'Consultation';
                                     const isCourt = slot.type === 'Court';
                                     const dotColor = slot.isBooked
@@ -277,7 +366,11 @@ export default function LawyerDashboard() {
                                                             <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest ${tagColors}`}>
                                                                 {slot.type}
                                                             </span>
-                                                            <span className="text-[13px] font-bold text-[#181B25] flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-slate-400" /> {slot.time}</span>
+                                                            <span className="text-[13px] font-bold text-[#181B25] flex items-center gap-1.5">
+                                                                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                                                {viewMode === 'all' && <span className="text-orange-500">{slot.date} | </span>}
+                                                                {slot.time}
+                                                            </span>
                                                         </div>
                                                         <h4 className="text-lg font-bold text-[#181B25] tracking-tight">
                                                             {slot.isBooked ? slot.clientName : 'Open Available Slot'}
@@ -303,7 +396,14 @@ export default function LawyerDashboard() {
                                             </div>
                                         </div>
                                     )
-                                })}
+                                }) : (
+                                    <div className="py-10 text-center">
+                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                            <CalendarIcon className="w-8 h-8 text-slate-300" />
+                                        </div>
+                                        <p className="text-slate-400 font-bold text-sm">No slots scheduled for this date.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -321,16 +421,25 @@ export default function LawyerDashboard() {
                             Quick Actions
                         </h3>
                         <div className="space-y-3 relative z-10 block">
-                            <button className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition">
-                                <div className="bg-[#2A2E3D] text-[#FF9000] p-2.5 rounded-full"><Plus className="w-4 h-4" /></div>
+                            <button
+                                onClick={() => setIsAddSlotOpen(true)}
+                                className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition group"
+                            >
+                                <div className="bg-[#2A2E3D] text-[#FF9000] p-2.5 rounded-full group-hover:scale-110 transition duration-300"><Plus className="w-4 h-4" /></div>
                                 <span className="font-bold text-sm text-slate-200">Add New Slot</span>
                             </button>
-                            <button className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition">
-                                <div className="bg-[#2A2E3D] text-[#984FFF] p-2.5 rounded-full"><Edit className="w-4 h-4" /></div>
+                            <button
+                                onClick={() => router.push('/lawyerDashboard/settings')}
+                                className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition group"
+                            >
+                                <div className="bg-[#2A2E3D] text-[#984FFF] p-2.5 rounded-full group-hover:scale-110 transition duration-300"><Edit className="w-4 h-4" /></div>
                                 <span className="font-bold text-sm text-slate-200">Update Profile Details</span>
                             </button>
-                            <button className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition">
-                                <div className="bg-[#2A2E3D] text-[#10B981] p-2.5 rounded-full"><TrendingUp className="w-4 h-4" /></div>
+                            <button
+                                onClick={() => router.push('/lawyerDashboard/analytics')}
+                                className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition group"
+                            >
+                                <div className="bg-[#2A2E3D] text-[#10B981] p-2.5 rounded-full group-hover:scale-110 transition duration-300"><TrendingUp className="w-4 h-4" /></div>
                                 <span className="font-bold text-sm text-slate-200">View Analytics Report</span>
                             </button>
                         </div>
@@ -366,43 +475,43 @@ export default function LawyerDashboard() {
                         <div className="p-8">
                             <h3 className="text-2xl font-bold text-slate-900 mb-2">Create Availability Slot</h3>
                             <p className="text-slate-500 mb-8 text-sm">Add a new time for consultations or court appearances.</p>
-                            
+
                             <div className="space-y-6">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Date</label>
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
                                         value={newSlot.date}
-                                        onChange={e => setNewSlot({...newSlot, date: e.target.value})}
+                                        onChange={e => setNewSlot({ ...newSlot, date: e.target.value })}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Time (e.g. 10:00 AM - 11:00 AM)</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         placeholder="10:00 AM - 11:00 AM"
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
                                         value={newSlot.time}
-                                        onChange={e => setNewSlot({...newSlot, time: e.target.value})}
+                                        onChange={e => setNewSlot({ ...newSlot, time: e.target.value })}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Meeting Location (Physical Address)</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         placeholder="e.g. No 123, Galle Road, Colombo"
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
                                         value={newSlot.location}
-                                        onChange={e => setNewSlot({...newSlot, location: e.target.value})}
+                                        onChange={e => setNewSlot({ ...newSlot, location: e.target.value })}
                                     />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Appointment Type</label>
-                                    <select 
+                                    <select
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition appearance-none"
                                         value={newSlot.type}
-                                        onChange={e => setNewSlot({...newSlot, type: e.target.value})}
+                                        onChange={e => setNewSlot({ ...newSlot, type: e.target.value })}
                                     >
                                         <option value="Consultation">Consultation</option>
                                         <option value="Court">Court Appearance</option>
@@ -412,13 +521,13 @@ export default function LawyerDashboard() {
                             </div>
 
                             <div className="flex gap-3 mt-10">
-                                <button 
+                                <button
                                     onClick={() => setIsAddSlotOpen(false)}
                                     className="flex-1 px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition"
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={handleSaveSlot}
                                     disabled={isSaving}
                                     className="flex-1 px-6 py-3.5 bg-[#FF9000] hover:bg-[#E68200] text-white font-bold rounded-2xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
