@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import axios from "axios";
+import { API_BASE_URL } from "@/lib/constants";
 
 export async function DELETE(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -11,8 +12,7 @@ export async function DELETE(req: Request) {
     }
 
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await axios.delete(`${baseUrl}/profile/${email}`, {
+        const response = await axios.delete(`${API_BASE_URL}/profile/${email}`, {
             headers: {
                 "ngrok-skip-browser-warning": "69420"
             }
