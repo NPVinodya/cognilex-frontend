@@ -5,6 +5,8 @@ import page from "@/app/page";
 import SettingsModal from "@/components/chat/SettingsModal";
 import CorporatePlanModal from "@/components/chat/CorporatePlanModal";
 import SupportDeskModal from "@/components/chat/SupportDeskModal";
+import { API_BASE_URL } from "@/lib/constants";
+import { account } from "@/lib/appwrite";
 
 export default function CogniLexAI() {
   const [question, setQuestion] = useState("");
@@ -66,51 +68,110 @@ export default function CogniLexAI() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-    const storedUser = localStorage.getItem("user");
-    const accessToken = localStorage.getItem("accessToken");
+    const syncUserFromStorageAndMongo = async () => {
+      let isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
+      let storedUser = localStorage.getItem("user");
 
-    if (!isAuthenticated || !storedUser) {
-      router.push("/login");
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(storedUser);
-      let tokenRole = "";
-
-      // Decode JWT Access Token to extract the role dynamically
-      if (accessToken) {
+      // OAuth redirects can arrive with Appwrite session cookie but without local storage.
+      if (!isAuthenticated || !storedUser) {
         try {
-          const base64Url = accessToken.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-          }).join(''));
-          tokenRole = JSON.parse(jsonPayload).role;
-        } catch (e) {
-          console.error("Could not parse JWT token for role", e);
+          const appwriteUser = await account.get();
+
+          // Upsert this OAuth user into MongoDB so they have a proper record with role="user".
+          let mongoUser: any = null;
+          try {
+            const oauthRes = await fetch(`${API_BASE_URL}/register-oauth`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                appwrite_id: appwriteUser.$id,
+                email: appwriteUser.email,
+                name: appwriteUser.name || appwriteUser.email,
+              }),
+            });
+            if (oauthRes.ok) {
+              const oauthData = await oauthRes.json();
+              mongoUser = oauthData?.user ?? null;
+            }
+          } catch {
+            // Backend unavailable — fall back to Appwrite-only data.
+          }
+
+          const seedUser = {
+            ...appwriteUser,
+            ...mongoUser,
+            role: mongoUser?.role || "user",
+            userrole: (mongoUser?.role || "user").toLowerCase(),
+          };
+          localStorage.setItem("user", JSON.stringify(seedUser));
+          localStorage.setItem("isAuthenticated", "true");
+
+          try {
+            const jwt = await account.createJWT();
+            localStorage.setItem("accessToken", jwt.jwt);
+            localStorage.setItem("tokenType", "Bearer");
+            document.cookie = `isAuthenticated=true; Path=/; Max-Age=604800; SameSite=Lax`;
+            document.cookie = `accessToken=${encodeURIComponent(jwt.jwt)}; Path=/; Max-Age=604800; SameSite=Lax`;
+          } catch {
+            // Appwrite session cookie is enough to keep route access when JWT cannot be created.
+          }
+
+          isAuthenticated = true;
+          storedUser = localStorage.getItem("user");
+        } catch {
+          router.push("/login");
+          return;
         }
       }
 
-      const currentAppearance = parsed.preferences?.appearance || "Dark Mode";
-      setCurrentUser({
-        name: parsed.name || parsed.email || "User",
-        email: parsed.email || "",
-        userrole: tokenRole || parsed.role || "Users",
-        avatar_url: parsed.avatar_url,
-        preferences: parsed.preferences || { appearance: "Dark Mode", language: "English (US)" }
-      });
 
-      if (currentAppearance === "Dark Mode" || currentAppearance === "System Default") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
+      try {
+        const parsed = JSON.parse(storedUser ?? "{}");
+        const email = parsed?.email || "";
+
+        let mongoUser: any = null;
+        if (email) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/user/${encodeURIComponent(email)}`);
+            if (response.ok) {
+              mongoUser = await response.json();
+            }
+          } catch (fetchError) {
+            console.error("Failed to fetch MongoDB user data", fetchError);
+          }
+        }
+
+        const mergedUser = {
+          ...parsed,
+          ...mongoUser,
+          role: mongoUser?.role || parsed?.role || parsed?.userrole || "user",
+          userrole: (mongoUser?.role || parsed?.role || parsed?.userrole || "user").toLowerCase(),
+          preferences: mongoUser?.preferences || parsed?.preferences || { appearance: "Dark Mode", language: "English (US)" },
+        };
+
+        localStorage.setItem("user", JSON.stringify(mergedUser));
+
+        const currentAppearance = mergedUser.preferences?.appearance || "Dark Mode";
+        setCurrentUser({
+          name: mergedUser.name || mergedUser.email || "User",
+          email: mergedUser.email || "",
+          userrole: mergedUser.userrole,
+          avatar_url: mergedUser.avatar_url,
+          preferences: mergedUser.preferences,
+        });
+
+        if (currentAppearance === "Dark Mode" || currentAppearance === "System Default") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      } catch (parseError) {
+        console.error("Failed to read session user", parseError);
+        router.push("/login");
       }
-    } catch (error) {
-      console.error("Failed to parse stored user", error);
-      router.push("/login");
-    }
+    };
+
+    syncUserFromStorageAndMongo();
   }, [router]);
 
   const getUserInitials = (name?: string, email?: string) => {
@@ -342,10 +403,10 @@ export default function CogniLexAI() {
 
         {/* Settings Modal */}
         {showSettings && (
-          <SettingsModal 
-            onClose={() => setShowSettings(false)} 
-            activeTab={activeSettingsTab} 
-            setActiveTab={setActiveSettingsTab} 
+          <SettingsModal
+            onClose={() => setShowSettings(false)}
+            activeTab={activeSettingsTab}
+            setActiveTab={setActiveSettingsTab}
             currentUser={currentUser}
             onUpdateUser={(updatedUser) => {
               setCurrentUser(updatedUser);

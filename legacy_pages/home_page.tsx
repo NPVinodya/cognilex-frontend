@@ -8,28 +8,28 @@ import { BookOpen, FileText, Users, Scale, Gavel, Shield, Award, MessageSquare }
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-  
+
       <Header />
 
-       <main className="flex-grow">
+      <main className="flex-grow">
         {/* Hero Section */}
-       
-          <div className="relative bg-slate-900 py-20 lg:py-38 overflow-hidden z-0">
-              {/* Animated Legal Icons Background */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-10 animate-float">
-          <Scale className="w-32 h-32 text-white" />
-        </div>
-        <div className="absolute top-20 right-20 animate-float-delayed">
-          <Gavel className="w-32 h-32 text-white" />
-        </div>
-        <div className="absolute bottom-32 left-40 animate-float">
-          <Shield className="w-32 h-32 text-white" />
-        </div>
-        <div className="absolute bottom-32 right-50 animate-pulse">
-          <Award className="w-32 h-32 text-white" />
-        </div>
-      </div>
+
+        <div className="relative bg-slate-900 py-20 lg:py-38 overflow-hidden z-0">
+          {/* Animated Legal Icons Background */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-20 left-10 animate-float">
+              <Scale className="w-32 h-32 text-white" />
+            </div>
+            <div className="absolute top-20 right-20 animate-float-delayed">
+              <Gavel className="w-32 h-32 text-white" />
+            </div>
+            <div className="absolute bottom-32 left-40 animate-float">
+              <Shield className="w-32 h-32 text-white" />
+            </div>
+            <div className="absolute bottom-32 right-50 animate-pulse">
+              <Award className="w-32 h-32 text-white" />
+            </div>
+          </div>
           {/* Subtle Background Pattern */}
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
 
@@ -113,10 +113,10 @@ export default function HomePage() {
                 <Scale className="w-24 h-24 text-white" />
               </div>
               <div className="absolute top-5 left-3 opacity-10 transform translate-x-1 -translate-y-1">
-              <Gavel className="w-24 h-24 text-white" />
+                <Gavel className="w-24 h-24 text-white" />
               </div>
               <div className="absolute bottom-0 right-10 opacity-10 transform translate-x-1/4 -translate-y-1/4">
-              <Gavel className="w-24 h-24 text-white" />
+                <Gavel className="w-24 h-24 text-white" />
               </div>
               <div className="relative z-10 flex flex-col items-center">
                 <Shield className="w-12 h-12 text-amber-500 mb-6" />
