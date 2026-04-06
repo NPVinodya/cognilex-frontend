@@ -1,23 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Search, Filter, Plus, Phone, Mail, MoreVertical, Briefcase } from 'lucide-react';
 
-const MOCK_CLIENTS = [
-    { id: 'C-001', name: 'Sarah Jenkins', type: 'Individual', phone: '+94 77 123 4567', email: 'sarah.j@email.com', activeCases: 1, status: 'Active' },
-    { id: 'C-002', name: 'Corporate Tech Inc.', type: 'Corporate', phone: '+94 11 234 5678', email: 'legal@corptech.com', activeCases: 3, status: 'Active' },
-    { id: 'C-003', name: 'Malinga Perera', type: 'Individual', phone: '+94 71 345 6789', email: 'malinga.p@email.com', activeCases: 1, status: 'Active' },
-    { id: 'C-004', name: 'Priyanka Silva', type: 'Individual', phone: '+94 76 456 7890', email: 'priyanka.s@email.com', activeCases: 0, status: 'Inactive' },
-    { id: 'C-005', name: 'Global Logistics', type: 'Corporate', phone: '+94 11 567 8901', email: 'contact@globallog.com', activeCases: 2, status: 'Active' },
-    { id: 'C-006', name: 'David Fernando', type: 'Individual', phone: '+94 77 678 9012', email: 'david.f@email.com', activeCases: 0, status: 'Archived' },
-];
+// Clients are now fetched from the backend
 
 export default function ClientsPage() {
+    const [clients, setClients] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredClients = MOCK_CLIENTS.filter(client =>
-        client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.id.toLowerCase().includes(searchQuery.toLowerCase())
+    useEffect(() => {
+        const fetchClients = async () => {
+            try {
+                const storedUser = localStorage.getItem("user");
+                if (!storedUser) return;
+                const user = JSON.parse(storedUser);
+                const lawyerId = user.id || user._id;
+
+                const res = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=clients`);
+                const data = await res.json();
+                if (data.success) {
+                    setClients(data.clients || []);
+                }
+            } catch (error) {
+                console.error("Error fetching clients:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchClients();
+    }, []);
+
+    const filteredClients = clients.filter(client =>
+        (client.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (client.id || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (

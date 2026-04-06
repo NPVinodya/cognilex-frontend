@@ -34,63 +34,125 @@ const WEEK_DATES = [
 export default function LawyerDashboard() {
 
     const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
+    const [stats, setStats] = useState<any>(null);
+    const [lawyerName, setLawyerName] = useState("Counsel");
 
 
     const [loading, setLoading] = useState(true);
+    const [isAddSlotOpen, setIsAddSlotOpen] = useState(false);
+    const [newSlot, setNewSlot] = useState({ date: '', time: '', type: 'Consultation', location: '' });
+    const [isSaving, setIsSaving] = useState(false);
+
+    const fetchData = async () => {
+        try {
+            const storedUser = localStorage.getItem("user");
+            if (!storedUser) {
+                setLoading(false);
+                return;
+            }
+            
+            const user = JSON.parse(storedUser);
+            const lawyerId = user.id || user._id;
+            if (user.name) setLawyerName(user.name.split(' ')[0]);
+
+            if (!lawyerId) {
+                setLoading(false);
+                return;
+            }
+            
+            // Fetch Stats
+            const statsRes = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=stats`);
+            const statsData = await statsRes.json();
+            if (statsData.success) setStats(statsData.stats);
+
+            // Fetch Appointments
+            const slotsRes = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=appointments`);
+            const slotsData = await slotsRes.json();
+            if (slotsData.success) setAvailabilitySlots(slotsData.slots || []);
+            
+            setLoading(false);
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchSlots = async () => {
-            try {
-                const storedUser = localStorage.getItem("user");
-                if (!storedUser) {
-                    setLoading(false);
-                    return;
-                }
-                
-                const user = JSON.parse(storedUser);
-                const lawyerId = user.id || user._id; // Adjust based on your auth object
-
-                if (!lawyerId) {
-                    console.error("Lawyer ID not found.");
-                    setLoading(false);
-                    return;
-                }
-                
-                const response = await fetch(`http://127.0.0.1:8000/api/lawyer/slots/${lawyerId}`);
-                if (!response.ok) throw new Error("Failed to fetch");
-                
-                const data = await response.json();
-                
-                // Set slots safely ensuring it is an array
-                setAvailabilitySlots(Array.isArray(data) ? data : (data.slots || []));
-                setLoading(false);
-            } catch (error) {
-                console.error("Error fetching slots:", error);
-                setAvailabilitySlots([]);
-                setLoading(false);
-            }
-        };
-
-        fetchSlots();
+        fetchData();
     }, []);
-
 
     if (loading) return <div className="p-10">Loading Dashboard...</div>;
 
-    const handleDeleteSlot = (id: string) => {
-        setAvailabilitySlots(availabilitySlots.filter(slot => slot.id !== id));
+    const handleSaveSlot = async () => {
+        if (!newSlot.date || !newSlot.time) return alert("Please pick a Date and Time.");
+        
+        setIsSaving(true);
+        try {
+            const storedUser = localStorage.getItem("user");
+            if (!storedUser) throw new Error("User session not found.");
+            
+            const user = JSON.parse(storedUser);
+            const lawyerId = user.id || user._id;
+            
+            if (!lawyerId) throw new Error("Lawyer ID not found in profile.");
+
+            const res = await fetch('/api/lawyer/dashboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    lawyerId,
+                    date: newSlot.date,
+                    time: newSlot.time,
+                    type: newSlot.type,
+                    location: newSlot.location || "Office"
+                })
+            });
+
+            const data = await res.json();
+            
+            if (res.ok && data.success) {
+                alert("Slot created successfully!");
+                fetchData();
+                setIsAddSlotOpen(false);
+                setNewSlot({ date: '', time: '', type: 'Consultation', location: '' });
+            } else {
+                alert(`Error: ${data.message || "Failed to create slot"}`);
+            }
+        } catch (error: any) {
+            console.error("Save Error:", error);
+            alert(`Error: ${error.message || "Connection failed"}`);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDeleteSlot = async (id: string) => {
+        if (!window.confirm("Are you sure you want to remove this availability slot?")) return;
+        try {
+            const res = await fetch(`/api/lawyer/dashboard?slotId=${id}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAvailabilitySlots(availabilitySlots.filter(slot => slot.id !== id));
+            } else {
+                alert(data.message || "Failed to remove slot");
+            }
+        } catch (error) {
+            alert("Error removing slot");
+        }
     };
 
     return (
         <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
                 <div>
-                    <h1 className="text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Welcome back, Prabani</h1>
+                    <h1 className="text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Welcome back, {lawyerName}</h1>
                     <p className="text-slate-500 font-medium mt-1 text-sm">Here is what's happening with your practice today.</p>
                 </div>
                 <div className="inline-flex items-center gap-2 bg-white px-5 py-2.5 rounded-full border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] text-sm font-bold text-slate-700 w-fit">
                     <Clock className="w-4 h-4 text-[#FF9000]" />
-                    Thursday, March 12, 2026
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
             </div>
 
@@ -105,7 +167,7 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Total Bookings</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">142</h3>
+                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.totalBookings || 0}</h3>
                     </div>
                 </div>
 
@@ -117,7 +179,7 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-orange-100 uppercase tracking-widest mb-1.5">Profile Views</p>
-                        <h3 className="text-[32px] font-black text-white leading-none">2,408</h3>
+                        <h3 className="text-[32px] font-black text-white leading-none">{stats?.profileViews?.toLocaleString() || "0"}</h3>
                     </div>
                 </div>
 
@@ -129,7 +191,7 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Pending Requests</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">8</h3>
+                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.pendingRequests || 0}</h3>
                     </div>
                 </div>
 
@@ -142,7 +204,7 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Active Clients</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">84</h3>
+                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.activeClients || 0}</h3>
                     </div>
                 </div>
             </div>
@@ -162,7 +224,10 @@ export default function LawyerDashboard() {
                                 </h2>
                                 <p className="text-slate-500 text-sm mt-1">Manage your calendar capacity for the week.</p>
                             </div>
-                            <Button className="bg-[#FF9000] hover:bg-[#E68200] rounded-full shadow-md shadow-orange-600/20 text-sm h-10 px-6 gap-2 text-white font-semibold">
+                            <Button 
+                                onClick={() => setIsAddSlotOpen(true)}
+                                className="bg-[#FF9000] hover:bg-[#E68200] rounded-full shadow-md shadow-orange-600/20 text-sm h-10 px-6 gap-2 text-white font-semibold"
+                            >
                                 <Plus className="h-4 w-4" /> Add Slot
                             </Button>
                         </div>
@@ -293,6 +358,78 @@ export default function LawyerDashboard() {
 
                 </div>
             </div>
+
+            {/* Add Slot Modal */}
+            {isAddSlotOpen && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-8">
+                            <h3 className="text-2xl font-bold text-slate-900 mb-2">Create Availability Slot</h3>
+                            <p className="text-slate-500 mb-8 text-sm">Add a new time for consultations or court appearances.</p>
+                            
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Date</label>
+                                    <input 
+                                        type="date" 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        value={newSlot.date}
+                                        onChange={e => setNewSlot({...newSlot, date: e.target.value})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Time (e.g. 10:00 AM - 11:00 AM)</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="10:00 AM - 11:00 AM"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        value={newSlot.time}
+                                        onChange={e => setNewSlot({...newSlot, time: e.target.value})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Meeting Location (Physical Address)</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="e.g. No 123, Galle Road, Colombo"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        value={newSlot.location}
+                                        onChange={e => setNewSlot({...newSlot, location: e.target.value})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Appointment Type</label>
+                                    <select 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition appearance-none"
+                                        value={newSlot.type}
+                                        onChange={e => setNewSlot({...newSlot, type: e.target.value})}
+                                    >
+                                        <option value="Consultation">Consultation</option>
+                                        <option value="Court">Court Appearance</option>
+                                        <option value="Meeting">Meeting</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 mt-10">
+                                <button 
+                                    onClick={() => setIsAddSlotOpen(false)}
+                                    className="flex-1 px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={handleSaveSlot}
+                                    disabled={isSaving}
+                                    className="flex-1 px-6 py-3.5 bg-[#FF9000] hover:bg-[#E68200] text-white font-bold rounded-2xl transition shadow-lg shadow-orange-600/20 disabled:opacity-50"
+                                >
+                                    {isSaving ? "Saving..." : "Save Slot"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

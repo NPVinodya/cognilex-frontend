@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Search, Filter,
     MoreVertical, FileText, CheckCircle2, XCircle, User
@@ -19,73 +19,59 @@ interface Appointment {
     status: AppointmentStatus;
 }
 
-const INITIAL_APPOINTMENTS: Appointment[] = [
-    {
-        id: 'APT-1042',
-        clientName: 'Sarah Jenkins',
-        type: 'Consultation',
-        date: 'March 12, 2026',
-        time: '09:00 AM - 10:00 AM',
-        location: 'Colombo Inner Office',
-        status: 'Confirmed',
-    },
-    {
-        id: 'APT-1043',
-        clientName: 'Corporate Tech Inc.',
-        type: 'Court',
-        date: 'March 12, 2026',
-        time: '11:00 AM - 12:30 PM',
-        location: 'Supreme Court - Hall B',
-        status: 'Confirmed',
-    },
-    {
-        id: 'APT-1044',
-        clientName: 'Malinga Perera',
-        type: 'Consultation',
-        date: 'March 14, 2026',
-        time: '02:00 PM - 03:00 PM',
-        location: 'Colombo CBD Office',
-        status: 'Pending',
-    },
-    {
-        id: 'APT-1045',
-        clientName: 'Priyanka Silva',
-        type: 'Meeting',
-        date: 'March 15, 2026',
-        time: '10:00 AM - 11:30 AM',
-        location: 'Colombo CBD Office',
-        status: 'Pending',
-    },
-    {
-        id: 'APT-1046',
-        clientName: 'David Fernando',
-        type: 'Consultation',
-        date: 'March 05, 2026',
-        time: '01:00 PM - 02:00 PM',
-        location: 'Colombo Inner Office',
-        status: 'Completed',
-    },
-    {
-        id: 'APT-1047',
-        clientName: 'Nuwan Jayakody',
-        type: 'Meeting',
-        date: 'March 02, 2026',
-        time: '09:30 AM - 10:30 AM',
-        location: 'Colombo CBD Office',
-        status: 'Canceled',
-    },
-];
+// Appointments are now fetched from the backend
 
 export default function AppointmentsPage() {
-    const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'Upcoming' | 'Past' | 'Canceled'>('Upcoming');
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Status Action Handler
-    const handleUpdateStatus = (id: string, newStatus: AppointmentStatus) => {
-        setAppointments(prev => prev.map(apt =>
-            apt.id === id ? { ...apt, status: newStatus } : apt
-        ));
+    useEffect(() => {
+        const fetchAppointments = async () => {
+            try {
+                const storedUser = localStorage.getItem("user");
+                if (!storedUser) return;
+                const user = JSON.parse(storedUser);
+                const lawyerId = user.id || user._id;
+
+                let statusFilter = "all";
+                if (activeTab === "Upcoming") statusFilter = "pending";
+                if (activeTab === "Past") statusFilter = "completed";
+                if (activeTab === "Canceled") statusFilter = "canceled";
+
+                const res = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=all-appointments&status=${statusFilter}`);
+                const data = await res.json();
+                if (data.success) {
+                    setAppointments(data.appointments || []);
+                }
+            } catch (error) {
+                console.error("Error fetching appointments:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAppointments();
+    }, [activeTab]);
+
+    const handleUpdateStatus = async (id: string, newStatus: string) => {
+        try {
+            const apiStatus = newStatus.toLowerCase();
+            const res = await fetch('/api/lawyer/dashboard', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appointmentId: id, status: apiStatus })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAppointments(prev => prev.map(apt => 
+                    apt.id === id ? { ...apt, status: newStatus as any } : apt
+                ));
+            }
+        } catch (error) {
+            alert("Failed to update status.");
+        }
     };
 
     // Filter logic based on tabs and search

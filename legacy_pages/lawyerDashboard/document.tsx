@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Search, Plus, Folder, File as FileIcon, Download, MoreVertical, UploadCloud, Clock } from 'lucide-react';
 
 const MOCK_FOLDERS = [
@@ -10,14 +10,34 @@ const MOCK_FOLDERS = [
     { id: '4', name: 'Invoices & Billing', count: 89, size: '150 MB', color: 'bg-emerald-50 text-emerald-600' },
 ];
 
-const MOCK_RECENT = [
-    { id: 'DOC-01', name: 'Jenkins_Trial_Brief_v2.pdf', type: 'PDF', date: 'Today, 10:42 AM', size: '2.4 MB' },
-    { id: 'DOC-02', name: 'Property_Deed_Signed.docx', type: 'DOCX', date: 'Yesterday, 04:15 PM', size: '1.1 MB' },
-    { id: 'DOC-03', name: 'Corporate_Merger_Draft.pdf', type: 'PDF', date: 'Mar 24, 2026', size: '5.6 MB' },
-    { id: 'DOC-04', name: 'Court_Hearing_Schedule.xlsx', type: 'XLSX', date: 'Mar 22, 2026', size: '840 KB' },
-];
+// Recent documents are now fetched from the backend
 
 export default function DocumentsPage() {
+    const [documents, setDocuments] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDocuments = async () => {
+            try {
+                const storedUser = localStorage.getItem("user");
+                if (!storedUser) return;
+                const user = JSON.parse(storedUser);
+                const lawyerId = user.id || user._id;
+
+                const res = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=documents`);
+                const data = await res.json();
+                if (data.success) {
+                    setDocuments(data.documents || []);
+                }
+            } catch (error) {
+                console.error("Error fetching documents:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDocuments();
+    }, []);
     return (
         <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
@@ -63,7 +83,7 @@ export default function DocumentsPage() {
                 <h2 className="text-lg font-bold text-[#181B25] mb-4">Recent Documents</h2>
                 <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] overflow-hidden">
                     <div className="divide-y divide-slate-100/80">
-                        {MOCK_RECENT.map((doc) => (
+                        {documents.length > 0 ? documents.map((doc) => (
                             <div key={doc.id} className="flex items-center justify-between p-4 px-6 hover:bg-slate-50/50 transition">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
@@ -78,12 +98,21 @@ export default function DocumentsPage() {
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <p className="text-xs text-slate-500 font-medium hidden sm:flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {doc.date}</p>
-                                    <button className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-[#FF9000] hover:border-[#FF9000] rounded-lg transition shadow-sm">
+                                    <a 
+                                        href={doc.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-[#FF9000] hover:border-[#FF9000] rounded-lg transition shadow-sm"
+                                    >
                                         <Download className="w-4 h-4" />
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="p-12 text-center text-slate-500 font-medium">
+                                No recent documents found.
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
