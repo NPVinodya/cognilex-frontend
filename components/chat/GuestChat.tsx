@@ -23,7 +23,7 @@ export default function GuestChat() {
 
   const handleSend = async () => {
     if (!input.trim() || shouldPromptRegistration) return;
-    
+
     // Add user message to UI
     const userMessage = {
       id: Date.now().toString(),
@@ -31,7 +31,7 @@ export default function GuestChat() {
       isUser: true,
       timestamp: new Date(),
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setGuestMessageCount(prev => prev + 1);
     setInput('');
@@ -83,7 +83,7 @@ export default function GuestChat() {
             </button>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -98,13 +98,13 @@ export default function GuestChat() {
             disabled={shouldPromptRegistration || loading}
             className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          
+
           <button
             onClick={handleSend}
             disabled={shouldPromptRegistration || loading || !input.trim()}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-           {loading ? (
+            {loading ? (
               <><div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div></>
             ) : (
               <Send className="w-5 h-5" />

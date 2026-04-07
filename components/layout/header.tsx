@@ -15,13 +15,13 @@ export default function Header() {
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
-    
+
     if (typeof window !== "undefined") {
       localStorage.removeItem("user");
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("tokenType");
-      
+
       // Crucial: Clear cookies so the middleware proxy knows you are logged out
       document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -135,14 +135,14 @@ export default function Header() {
               <>
                 <button
                   onClick={() => router.push('/login')}
-                  className="flex items-center space-x-2 px-5 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all duration-300 font-medium backdrop-blur-sm hover:scale-105"
+                  className="cursor-pointer flex items-center space-x-2 px-5 py-2.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all duration-300 font-medium backdrop-blur-sm hover:scale-105"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Login</span>
                 </button>
                 <button
                   onClick={() => router.push('/register')}
-                  className="flex items-center space-x-2 px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg hover:scale-105"
+                  className="cursor-pointer flex items-center space-x-2 px-5 py-2.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg hover:scale-105"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>Register</span>

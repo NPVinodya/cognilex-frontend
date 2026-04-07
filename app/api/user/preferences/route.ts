@@ -1,14 +1,14 @@
 export const runtime = "nodejs";
 
 import axios from "axios";
+import { API_BASE_URL } from "@/lib/constants";
 
 export async function PATCH(req: Request) {
     const body = await req.json();
 
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         const response = await axios.patch(
-            `${baseUrl}/preferences`,
+            `${API_BASE_URL}/preferences`,
             {
                 email: body.email,
                 appearance: body.appearance,
