@@ -20,6 +20,24 @@ export default function LawyersPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const stored = localStorage.getItem("user");
+      const parsed = stored ? JSON.parse(stored) : null;
+      const appearance = parsed?.preferences?.appearance || "Dark Mode";
+
+      if (appearance === "Dark Mode" || appearance === "System Default") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } catch {
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchLawyers = async () => {
       try {
         setLoading(true);
@@ -69,17 +87,17 @@ export default function LawyersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Find a Lawyer</h1>
-          <p className="text-gray-600">Connect with verified legal professionals across Sri Lanka</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Find a Lawyer</h1>
+          <p className="text-gray-600 dark:text-slate-300">Connect with verified legal professionals across Sri Lanka</p>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="mb-6 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
             {error}
           </div>
         )}
@@ -87,19 +105,19 @@ export default function LawyersPage() {
         <div className="grid md:grid-cols-4 gap-6">
           {/* Filters Sidebar */}
           <aside className="md:col-span-1">
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 sticky top-4">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">Filters</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-md border border-gray-100 dark:border-slate-800 sticky top-4">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-slate-100">Filters</h3>
 
               <div className="mb-4">
                 <ProvinceSelector selected={province} onChange={setProvince} />
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Specialization</label>
                 <select
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value as Specialization | "")}
-                  className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-2 border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 rounded-lg focus:outline-none focus:border-blue-500 dark:focus:border-amber-500"
                 >
                   <option value="">All Specializations</option>
                   {SPECIALIZATIONS.map((spec) => (
@@ -115,7 +133,7 @@ export default function LawyersPage() {
                   setProvince("");
                   setSpecialization("");
                 }}
-                className="w-full py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                className="w-full py-2 text-sm text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white border border-gray-300 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition"
               >
                 Clear Filters
               </button>
@@ -125,14 +143,14 @@ export default function LawyersPage() {
           {/* Lawyers List */}
           <div className="md:col-span-3">
             {loading ? (
-              <div className="bg-white rounded-xl shadow-md p-12 text-center">
+              <div className="bg-white dark:bg-slate-900 rounded-xl shadow-md p-12 text-center border border-transparent dark:border-slate-800">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-500 mt-4">Loading lawyers...</p>
+                <p className="text-gray-500 dark:text-slate-400 mt-4">Loading lawyers...</p>
               </div>
             ) : (
               <>
                 <div className="mb-4 flex items-center justify-between">
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 dark:text-slate-300">
                     {lawyers.length} lawyer{lawyers.length !== 1 ? "s" : ""} found
                   </p>
                 </div>
@@ -148,9 +166,9 @@ export default function LawyersPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white rounded-xl shadow-md p-12 text-center">
-                    <p className="text-gray-500 text-lg">No lawyers found matching your criteria.</p>
-                    <p className="text-gray-400 text-sm mt-2">Try adjusting your filters.</p>
+                  <div className="bg-white dark:bg-slate-900 rounded-xl shadow-md p-12 text-center border border-transparent dark:border-slate-800">
+                    <p className="text-gray-500 dark:text-slate-300 text-lg">No lawyers found matching your criteria.</p>
+                    <p className="text-gray-400 dark:text-slate-500 text-sm mt-2">Try adjusting your filters.</p>
                   </div>
                 )}
               </>
