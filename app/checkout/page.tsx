@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/header";
 import PaymentStepper from "@/components/checkout/PaymentStepper";
+import Script from "next/script";
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -22,8 +23,8 @@ function CheckoutContent() {
   const [slot, setSlot] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal">("card");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isBooked, setIsBooked] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -81,8 +82,86 @@ function CheckoutContent() {
     // Simulate payment
     setTimeout(() => {
       setIsProcessing(false);
-      setCurrentStep(3);
-    }, 2500);
+      setIsBooked(true);
+    }, 2000);
+  };
+
+  const handlePayHerePayment = async () => {
+    setIsProcessing(true);
+    try {
+      const amount = totalAmount;
+      const currency = "LKR";
+
+      const response = await fetch('/api/payment/payhere-hash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: slotId, amount, currency }),
+      });
+      const { hash } = await response.json();
+
+      const payment = {
+        sandbox: process.env.NEXT_PUBLIC_PAYHERE_SANDBOX !== "false",
+        merchant_id: process.env.NEXT_PUBLIC_PAYHERE_MERCHANT_ID || "1211149",
+        return_url: window.location.origin + "/checkout",
+        cancel_url: window.location.origin + "/checkout",
+        notify_url: window.location.origin + "/api/payment/payhere-notify", 
+        order_id: slotId,
+        items: `Legal Consultation: ${lawyer.fullName}`,
+        amount: amount.toFixed(2),
+        currency: currency,
+        hash: hash,
+        first_name: formData.fullName.split(' ')[0] || "User",
+        last_name: formData.fullName.split(' ')[1] || "CogniLex",
+        email: formData.email || "info@cognilex.com",
+        phone: formData.phone || "0770000000",
+        address: "Colombo",
+        city: "Colombo",
+        country: "Sri Lanka",
+      };
+
+      (window as any).payhere.onCompleted = async function onCompleted(orderId: string) {
+        console.log("PayHere Payment Completed for Order ID:", orderId);
+        
+        // Finalize the booking immediately in the backend
+        try {
+          const finalizeRes = await fetch('/api/lawyer/dashboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              slot_id: slotId,
+              payment_details: {
+                payment_id: "PAYHERE_CLIENT_" + orderId,
+                amount: amount.toFixed(2),
+                currency: currency,
+                client_name: formData.fullName,
+                client_email: formData.email
+              }
+            })
+          });
+          const finalizeData = await finalizeRes.json();
+          console.log("Finalization Result:", finalizeData);
+        } catch (err) {
+          console.error("Auto-finalization failed:", err);
+        }
+
+        setIsProcessing(false);
+        setIsBooked(true);
+      };
+
+      (window as any).payhere.onDismissed = function onDismissed() {
+        setIsProcessing(false);
+      };
+
+      (window as any).payhere.onError = function onError(error: string) {
+        setIsProcessing(false);
+        console.error("PayHere Error:", error);
+      };
+
+      (window as any).payhere.startPayment(payment);
+    } catch (error) {
+      console.error("PayHere Initiation Error:", error);
+      setIsProcessing(false);
+    }
   };
 
   if (loading) {
@@ -120,7 +199,7 @@ function CheckoutContent() {
   const consultationFee = (lawyer?.consultationFee || 2500);
   const totalAmount = consultationFee + 200;
 
-  if (currentStep === 3) {
+  if (currentStep === 3 || isBooked) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans">
         <Header />
@@ -140,6 +219,7 @@ function CheckoutContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans text-left">
+      <Script src="https://www.payhere.lk/lib/payhere.js" strategy="lazyOnload" />
       <Header />
 
       {/* Page Header — Always Dark */}
@@ -204,16 +284,6 @@ function CheckoutContent() {
                         <textarea name="notes" value={formData.notes} onChange={handleInputChange} rows={4} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-600 focus:border-transparent transition text-slate-900 resize-none font-medium font-inter text-left" placeholder="Briefly describe your legal issue..."></textarea>
                       </div>
                     </form>
-                  </div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4 mt-8">
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start gap-4 text-left shadow-sm">
-                    <div className="bg-amber-50 p-2 rounded-lg shrink-0"><ShieldCheck className="w-6 h-6 text-amber-600" /></div>
-                    <div><h4 className="font-bold text-slate-900 text-sm mb-1 font-outfit">Secure Booking</h4><p className="text-xs text-slate-500 font-medium leading-relaxed font-inter">Your data is encrypted safely.</p></div>
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start gap-4 text-left shadow-sm">
-                    <div className="bg-amber-50 p-2 rounded-lg shrink-0"><Clock className="w-6 h-6 text-amber-600" /></div>
-                    <div><h4 className="font-bold text-slate-900 text-sm mb-1 font-outfit">On-Time Guarantee</h4><p className="text-xs text-slate-500 font-medium leading-relaxed font-inter">Full refund if lawyer is late.</p></div>
                   </div>
                 </div>
               </div>
@@ -282,136 +352,135 @@ function CheckoutContent() {
           /* ── STEP 2: STACKED LAYOUT (CARDS TOP, 2-COL BOTTOM) ── */
           <div className="space-y-2 animate-in slide-in-from-right-4 duration-500">
 
-            {/* TOP: 3D Stacked Cards (Centered) */}
-            <div className="flex justify-center items-center h-52 group cursor-pointer overflow-visible">
-              <div className="relative w-[320px] h-[200px] overflow-visible" style={{ perspective: "800px" }}>
-                {/* Back card */}
-                <div className="absolute inset-0 w-[300px] h-[180px] rounded-2xl border border-slate-300/30 transition-all duration-700 group-hover:-translate-y-7"
-                  style={{ transform: "rotateX(22deg) rotateZ(-4deg) translate(-4px, -24px)", background: "linear-gradient(135deg, rgba(30,35,60,0.85) 0%, rgba(50,55,80,0.65) 100%)", backdropFilter: "blur(20px)", boxShadow: "0 20px 40px rgba(0,0,0,0.12)" }}>
-                  <div className="p-5 h-full flex flex-col justify-between">
-                    <span className="text-white/50 text-[11px] font-black tracking-[0.2em] font-inter italic">VISA</span>
-                    <div>
-                      <p className="text-white/25 text-[11px] font-inter tracking-[0.18em]">4455  5491  6118  6164</p>
-                      <p className="text-white/15 text-[9px] font-inter mt-1">Cardholder</p>
-                    </div>
-                  </div>
-                </div>
-                {/* Middle card */}
-                <div className="absolute inset-0 w-[300px] h-[180px] rounded-2xl border border-purple-300/30 transition-all duration-700 group-hover:-translate-y-2"
-                  style={{ transform: "rotateX(22deg) rotateZ(-4deg) translate(-10px, -2px)", background: "linear-gradient(135deg, rgba(120,110,210,0.55) 0%, rgba(90,80,195,0.4) 50%, rgba(150,140,240,0.45) 100%)", backdropFilter: "blur(24px)", boxShadow: "0 20px 50px rgba(80,70,180,0.12)" }}>
-                  <div className="p-5 h-full flex flex-col justify-between">
-                    <span className="text-white/75 text-[11px] font-black tracking-[0.2em] font-inter italic">VISA</span>
-                    <div>
-                      <p className="text-white/60 text-[11px] font-inter tracking-[0.18em]">4455  5491  6118  6164</p>
-                      <p className="text-white/35 text-[9px] font-inter mt-1">Edward Hunt</p>
-                    </div>
-                  </div>
-                </div>
-                {/* Front card */}
-                <div className="absolute inset-0 w-[300px] h-[180px] rounded-2xl border border-pink-300/25 transition-all duration-700 group-hover:translate-y-3"
-                  style={{ transform: "rotateX(22deg) rotateZ(-4deg) translate(-16px, 20px)", background: "linear-gradient(135deg, rgba(170,130,220,0.6) 0%, rgba(210,90,175,0.5) 50%, rgba(235,130,95,0.55) 100%)", backdropFilter: "blur(24px)", boxShadow: "0 25px 55px rgba(180,100,200,0.1)" }}>
-                  <div className="p-5 h-full flex flex-col justify-between">
-                    <div className="flex -space-x-2 w-fit">
-                      <div className="w-7 h-7 rounded-full bg-[#EB001B]/90"></div>
-                      <div className="w-7 h-7 rounded-full bg-[#F79E1B]/90"></div>
-                    </div>
-                    <div>
-                      <p className="text-white/80 text-[12px] font-inter font-semibold tracking-[0.18em]">4455  5491  6118  6164</p>
-                      <p className="text-white/50 text-[9px] font-inter mt-1">Edward Hunt</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* BOTTOM: 2-Column Grid */}
             <div className="grid lg:grid-cols-12 gap-6 items-start">
 
-              {/* LEFT: Payment Selection & Form (7 cols) */}
+              {/* LEFT: Unified Secure Payment (7 cols) */}
               <div className="lg:col-span-7 space-y-6">
-                {/* Payment Method Tabs */}
-                <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1.5">
-                  <button onClick={() => setPaymentMethod("card")} className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl transition-all duration-300 ${paymentMethod === "card" ? "bg-white shadow-lg text-slate-900" : "text-slate-400 hover:text-slate-600"}`}>
-                    <CreditCard className="w-5 h-5" />
-                    <span className="font-bold text-sm font-inter">Credit / Debit Card</span>
-                  </button>
-                  <button onClick={() => setPaymentMethod("paypal")} className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl transition-all duration-300 ${paymentMethod === "paypal" ? "bg-white shadow-lg text-slate-900" : "text-slate-400 hover:text-slate-600"}`}>
-                    <Globe className="w-5 h-5" />
-                    <span className="font-bold text-sm font-inter">PayPal</span>
-                  </button>
-                </div>
+                <div className="bg-transparent rounded-[2.5rem] shadow-2xl border border-slate-200/60 overflow-hidden text-left relative min-h-[460px]">
+                  {/* Premium Atmospheric Glow Background - Lightened */}
+                  <div className="absolute inset-0 z-0">
+                    <div className="absolute inset-0 bg-white/85 backdrop-blur-xl z-10"></div>
+                    <img 
+                      src="/payment-bg.png" 
+                      alt="" 
+                      className="w-full h-full object-cover opacity-35 blur-3xl scale-125"
+                    />
+                  </div>
+                  
+                  <div className="p-8 md:p-12 relative z-10 flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-amber-600/10 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+                      <ShieldCheck size={32} className="text-amber-600" />
+                    </div>
+                    
+                    <h2 className="text-2xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">Secure Checkout</h2>
+                    <p className="text-slate-500 text-[13px] max-w-sm mb-4 leading-relaxed font-inter">
+                      Pay securely via <span className="text-slate-900 font-bold">Credit/Debit Cards</span>, 
+                      <span className="text-slate-900 font-bold ml-1">Mobile Wallets</span> (Frimi, Genie, iPay), 
+                      or <span className="text-slate-900 font-bold ml-1">Internet Banking</span>.
+                    </p>
 
-                {/* Payment Form Card */}
-                <div className="bg-white rounded-[2rem] shadow-2xl border border-slate-200/60 overflow-hidden text-left">
-                  <div className="p-8 md:p-10">
-                    {paymentMethod === "card" && (
-                      <form onSubmit={handlePaymentSubmit} className="space-y-7 animate-in fade-in duration-500">
-                        <div className="space-y-2.5">
-                          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 font-inter flex items-center gap-2">
-                            <User className="w-3.5 h-3.5" /> Cardholder Name
-                          </label>
-                          <input required placeholder="Full name on card" className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-600/20 focus:bg-white focus:border-amber-500 outline-none transition-all text-slate-900 font-semibold font-inter placeholder:text-slate-300 placeholder:font-normal" />
-                        </div>
-                        <div className="space-y-2.5">
-                          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 font-inter flex items-center gap-2">
-                            <CreditCard className="w-3.5 h-3.5" /> Card Number
-                          </label>
-                          <div className="relative">
-                            <input required placeholder="1234  5678  9012  3456" className="w-full px-5 pr-24 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-600/20 focus:bg-white focus:border-amber-500 outline-none transition-all text-slate-900 font-semibold tracking-widest font-inter text-[17px] placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-widest" />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-40">
-                              <div className="flex -space-x-1.5">
-                                <div className="w-5 h-5 rounded-full bg-[#EB001B]"></div>
-                                <div className="w-5 h-5 rounded-full bg-[#F79E1B]"></div>
-                              </div>
-                              <div className="w-8 h-5 bg-[#1A1F71] rounded text-white text-[6px] font-black flex items-center justify-center">VISA</div>
+                    {/* Integrated 3D Stacked Cards (Scaled for internal box) */}
+                    <div className="flex justify-center items-center h-48 group cursor-pointer overflow-visible scale-90 mb-6">
+                      <div className="relative w-[320px] h-[200px] overflow-visible" style={{ perspective: "800px" }}>
+                        {/* Back card */}
+                        <div className="absolute inset-0 w-[300px] h-[180px] rounded-2xl border border-slate-300/30 transition-all duration-700 group-hover:-translate-y-7"
+                          style={{ transform: "rotateX(22deg) rotateZ(-4deg) translate(-4px, -24px)", background: "linear-gradient(135deg, rgba(30,35,60,0.85) 0%, rgba(50,55,80,0.65) 100%)", backdropFilter: "blur(20px)", boxShadow: "0 20px 40px rgba(0,0,0,0.12)" }}>
+                          <div className="p-5 h-full flex flex-col justify-between">
+                            <span className="text-white/50 text-[11px] font-black tracking-[0.2em] font-inter italic">VISA</span>
+                            <div>
+                              <p className="text-white/25 text-[11px] font-inter tracking-[0.18em]">4455  5491  6118  6164</p>
+                              <p className="text-white/15 text-[9px] font-inter mt-1">Cardholder</p>
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-5">
-                          <div className="space-y-2.5">
-                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 font-inter flex items-center gap-2">
-                              <Calendar className="w-3.5 h-3.5" /> Expiry Date
-                            </label>
-                            <input required placeholder="MM / YY" className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-600/20 focus:bg-white focus:border-amber-500 outline-none transition-all text-slate-900 font-semibold text-center font-inter text-[17px] placeholder:text-slate-300 placeholder:font-normal" />
-                          </div>
-                          <div className="space-y-2.5">
-                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1 font-inter flex items-center gap-2">
-                              <Lock className="w-3.5 h-3.5" /> Security Code
-                            </label>
-                            <input required type="password" placeholder="CVC" className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-600/20 focus:bg-white focus:border-amber-500 outline-none transition-all text-slate-900 font-semibold text-center tracking-[0.3em] font-inter text-[17px] placeholder:text-slate-300 placeholder:font-normal placeholder:tracking-normal" />
+                        {/* Middle card */}
+                        <div className="absolute inset-0 w-[300px] h-[180px] rounded-2xl border border-purple-300/30 transition-all duration-700 group-hover:-translate-y-2"
+                          style={{ transform: "rotateX(22deg) rotateZ(-4deg) translate(-10px, -2px)", background: "linear-gradient(135deg, rgba(120,110,210,0.55) 0%, rgba(90,80,195,0.4) 50%, rgba(150,140,240,0.45) 100%)", backdropFilter: "blur(24px)", boxShadow: "0 20px 50px rgba(80,70,180,0.12)" }}>
+                          <div className="p-5 h-full flex flex-col justify-between">
+                            <span className="text-white/75 text-[11px] font-black tracking-[0.2em] font-inter italic">VISA</span>
+                            <div>
+                              <p className="text-white/60 text-[11px] font-inter tracking-[0.18em]">4455  5491  6118  6164</p>
+                              <p className="text-white/35 text-[9px] font-inter mt-1">Edward Hunt</p>
+                            </div>
                           </div>
                         </div>
-
-                        <div className="pt-2">
-                          <button disabled={isProcessing} className="relative w-full h-[60px] bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-700 hover:via-amber-600 hover:to-amber-700 text-white rounded-2xl font-bold shadow-xl shadow-amber-600/25 transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-70 font-inter text-[15px] overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                            {isProcessing ? (
-                              <><Loader2 className="w-5 h-5 animate-spin" /><span className="animate-pulse">Processing payment...</span></>
-                            ) : (
-                              <><Lock className="w-4 h-4 opacity-70" /><span>Pay LKR {totalAmount.toLocaleString()}</span><ArrowRight className="w-4 h-4 opacity-70 group-hover:translate-x-1 transition" /></>
-                            )}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                    {paymentMethod === "paypal" && (
-                      <div className="py-10 flex flex-col items-center text-center animate-in fade-in duration-500">
-                        <div className="w-20 h-20 bg-[#003087]/10 rounded-2xl flex items-center justify-center mb-6">
-                          <Globe size={36} className="text-[#003087]" />
-                        </div>
-                        <h4 className="text-xl font-bold text-slate-900 mb-2 font-outfit">Pay with PayPal</h4>
-                        <p className="text-slate-500 text-sm max-w-sm mb-8 leading-relaxed font-inter">You&apos;ll be securely redirected to PayPal to complete your payment of <span className="font-bold text-slate-900">LKR {totalAmount.toLocaleString()}</span>.</p>
-                        <button onClick={handlePaymentSubmit} disabled={isProcessing} className="w-full max-w-xs h-14 bg-[#0070ba] text-white rounded-2xl font-bold hover:bg-[#003087] transition-all shadow-lg font-inter flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-70">
-                          {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Globe className="w-4 h-4" /> Continue to PayPal</>}
-                        </button>
-                        <div className="mt-6 opacity-40">
-                          <span className="text-[10px] font-bold text-slate-500 font-inter uppercase tracking-widest">Powered by PayPal</span>
+                        {/* Front card */}
+                        <div className="absolute inset-0 w-[300px] h-[180px] rounded-2xl border border-pink-300/25 transition-all duration-700 group-hover:translate-y-3"
+                          style={{ transform: "rotateX(22deg) rotateZ(-4deg) translate(-16px, 20px)", background: "linear-gradient(135deg, rgba(170,130,220,0.6) 0%, rgba(210,90,175,0.5) 50%, rgba(235,130,95,0.55) 100%)", backdropFilter: "blur(24px)", boxShadow: "0 25px 55px rgba(180,100,200,0.1)" }}>
+                          <div className="p-5 h-full flex flex-col justify-between">
+                            <div className="flex -space-x-2 w-fit">
+                              <div className="w-7 h-7 rounded-full bg-[#EB001B]/90"></div>
+                              <div className="w-7 h-7 rounded-full bg-[#F79E1B]/90"></div>
+                            </div>
+                            <div>
+                              <p className="text-white/80 text-[12px] font-inter font-semibold tracking-[0.18em]">4455  5491  6118  6164</p>
+                              <p className="text-white/50 text-[9px] font-inter mt-1">Edward Hunt</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </div>
+
+                    <div className="w-full space-y-6">
+                      <button 
+                        onClick={handlePayHerePayment} 
+                        disabled={isProcessing} 
+                        className="group relative w-full h-[50px] bg-[#121212] hover:bg-black text-white rounded-full font-semibold border border-amber-500/30 hover:border-amber-500 shadow-[0_0_20px_rgba(0,0,0,0.1)] hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] transition-all active:scale-[0.98] disabled:opacity-70 font-inter text-[15.5px] flex items-center justify-center overflow-hidden"
+                      >
+                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                         {isProcessing ? (
+                           <><Loader2 className="w-5 h-5 animate-spin" /><span className="animate-pulse tracking-wide">Securing connection...</span></>
+                         ) : (
+                           <span className="tracking-tight">Confirm & Pay LKR {totalAmount.toLocaleString()}</span>
+                         )}
+                      </button>
+
+                      {/* Trust Icons Grid — Matching the Image */}
+                      <div className="flex flex-wrap justify-center items-center gap-8 pt-12 px-4">
+                        {/* VISA - Robust Icon */}
+                        <div className="flex items-center gap-1.5 opacity-90 transition-all hover:scale-110">
+                           <div className="w-11 h-7 bg-[#1A1F71] rounded-sm flex items-center justify-center p-1 shadow-sm">
+                             <span className="text-white text-[10px] font-black italic tracking-tighter">VISA</span>
+                           </div>
+                           <div className="w-2.5 h-1.5 bg-[#F7B600] rounded-tr-[50%] rounded-bl-[50%] -ml-1"></div>
+                        </div>
+
+                        {/* Mastercard */}
+                        <div className="flex flex-col items-center gap-0.5 opacity-100 transition-all hover:scale-110">
+                           <div className="flex -space-x-1.5">
+                             <div className="w-5 h-5 rounded-full bg-[#EB001B]"></div>
+                             <div className="w-5 h-5 rounded-full bg-[#F79E1B]/90"></div>
+                           </div>
+                           <span className="text-[7px] font-bold text-slate-400 font-inter uppercase">mastercard</span>
+                        </div>
+
+                        {/* PCI DSS */}
+                        <div className="flex items-center gap-1.5 opacity-90">
+                           <div className="h-6 px-2.5 bg-slate-100/50 border border-slate-200 rounded-md flex items-center gap-1">
+                             <span className="text-slate-800 font-black text-[9px] font-inter">PCI</span>
+                             <Check className="w-3 h-3 text-emerald-500 stroke-[4]" />
+                             <span className="text-slate-500 font-bold text-[8px] font-inter">DSS</span>
+                           </div>
+                        </div>
+
+                        {/* Shields */}
+                        <div className="flex items-center gap-4 border-l border-slate-200 pl-8 opacity-60">
+                           <ShieldCheck className="w-5 h-5 text-slate-500" />
+                           <div className="w-[1px] h-4 bg-slate-200"></div>
+                           <Lock className="w-5 h-5 text-slate-400" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Subtle bottom info bar */}
+                  <div className="bg-slate-50/80 backdrop-blur-sm px-8 py-3 flex items-center justify-center gap-2 border-t border-slate-100">
+                    <Lock className="w-3 h-3 text-emerald-600" />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-inter">End-to-End Encrypted Transaction</span>
                   </div>
                 </div>
-
               </div>
 
               {/* RIGHT: Booking Summary (5 cols) */}
@@ -475,29 +544,68 @@ function CheckoutContent() {
 
         ) : (
           /* ── STEP 3: SUCCESS ── */
-          <div className="max-w-lg mx-auto text-center animate-in zoom-in-95 duration-500 py-16">
-            <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg shadow-emerald-200">
-              <CheckCircle className="w-12 h-12 text-emerald-600" />
+          /* ── STEP 3: SUCCESS ── */
+          <div className="max-w-2xl mx-auto py-12 px-4 relative">
+            {/* Celebratory Background Particles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+               <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-amber-400 rounded-full animate-ping opacity-20"></div>
+               <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-emerald-400 rounded-full animate-bounce opacity-20 duration-1000"></div>
+               <div className="absolute bottom-1/4 left-1/2 w-2 h-2 bg-purple-400 rounded-full animate-pulse opacity-20"></div>
             </div>
-            <h2 className="text-3xl font-black text-slate-900 mb-3 font-outfit">Booking Confirmed!</h2>
-            <p className="text-slate-500 mb-8 leading-relaxed font-inter">Your appointment with <span className="font-bold text-slate-900">{lawyer.fullName}</span> has been successfully booked. A confirmation email has been sent to <span className="font-bold text-slate-900">{formData.email}</span>.</p>
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8 shadow-md text-left space-y-3">
-              <div className="flex justify-between text-sm font-inter">
-                <span className="text-slate-500 font-medium">Date</span>
-                <span className="font-bold text-slate-900">{new Date(slot.date).toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-              </div>
-              <div className="flex justify-between text-sm font-inter">
-                <span className="text-slate-500 font-medium">Time</span>
-                <span className="font-bold text-slate-900">{slot.time}</span>
-              </div>
-              <div className="flex justify-between text-sm font-inter pt-2 border-t border-slate-100">
-                <span className="text-slate-500 font-medium">Total Paid</span>
-                <span className="font-black text-amber-600">LKR {totalAmount.toLocaleString()}</span>
-              </div>
+
+            <div className="bg-white/85 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-slate-200/60 overflow-hidden relative p-8 md:p-12 flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
+               {/* Underlay glow from Step 2 for continuity */}
+               <div className="absolute inset-0 z-0 opacity-20 blur-3xl scale-125">
+                 <img src="/payment-bg.png" alt="" className="w-full h-full object-cover" />
+               </div>
+
+               <div className="relative z-10 w-full flex flex-col items-center">
+                  <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-emerald-500/10">
+                    <CheckCircle className="w-10 h-10 text-emerald-500 animate-in spin-in-1 duration-700" />
+                  </div>
+
+                  <h2 className="text-3xl font-black text-slate-900 mb-3 font-outfit uppercase tracking-tight">Booking Confirmed!</h2>
+                  <p className="text-slate-500 text-sm max-w-md mb-10 leading-relaxed font-inter">
+                    Your legal consultation with <span className="font-bold text-slate-900">{lawyer.fullName}</span> has been successfully scheduled. A confirmation has been sent to your email.
+                  </p>
+
+                  <div className="w-full bg-slate-50/50 rounded-3xl border border-slate-100 p-8 mb-10 space-y-4 text-left">
+                    <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center"><Calendar className="w-4 h-4 text-amber-600" /></div>
+                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</span>
+                       </div>
+                       <span className="font-bold text-slate-900 font-inter">{new Date(slot.date).toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                       <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center"><Clock className="w-4 h-4 text-amber-600" /></div>
+                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Time Slot</span>
+                       </div>
+                       <span className="font-bold text-slate-900 font-inter">{slot.time}</span>
+                    </div>
+                    <div className="flex justify-between items-center pt-2">
+                       <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Transaction Status</span>
+                       <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1 rounded-full">
+                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                         <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Verified & Paid</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => router.push("/")} 
+                    className="group relative w-full h-[56px] bg-[#121212] hover:bg-black text-white rounded-full font-bold border border-amber-500/30 hover:border-amber-500 shadow-xl transition-all active:scale-[0.98] font-inter text-[16px] flex items-center justify-center overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    GO TO DASHBOARD
+                  </button>
+
+                  <p className="mt-8 text-[11px] text-slate-400 font-medium flex items-center gap-2">
+                    <ShieldCheck className="w-3 h-3" /> Secure Transaction Recorded via PayHere
+                  </p>
+               </div>
             </div>
-            <button onClick={() => router.push("/")} className="w-full h-14 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-amber-600/25 font-inter">
-              Back to Home
-            </button>
           </div>
         )}
 
