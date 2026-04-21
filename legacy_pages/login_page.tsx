@@ -1,18 +1,31 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LogIn, Eye, EyeOff, AlertCircle, Scale, Gavel, Shield, BookOpen, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { loginWithAppwrite, loginWithGoogleAppwrite, account } from '@/lib/appwrite';
+import { loginWithAppwrite, loginWithGoogleAppwrite, loginWithMicrosoftAppwrite, account } from '@/lib/appwrite';
 import { API_BASE_URL } from '@/lib/constants';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Check for OAuth errors
+  useEffect(() => {
+    const errorParam = searchParams?.get('error');
+    if (errorParam) {
+      const errorMessages: { [key: string]: string } = {
+        'google_auth_failed': 'Google authentication failed. Please try again.',
+        'microsoft_auth_failed': 'Microsoft authentication failed. Please try again.',
+      };
+      setError(errorMessages[errorParam] || 'Authentication failed. Please try again.');
+    }
+  }, [searchParams]);
 
   const setAuthCookie = (name: string, value: string) => {
     const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
@@ -25,43 +38,79 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await loginWithAppwrite(formData.email, formData.password);
+      // Validate input
+      if (!formData.email || !formData.password) {
+        throw new Error('Please enter both email and password');
+      }
 
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      // Password validation
+      if (formData.password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
+      }
+
+      // Login with email and password
+      const session = await loginWithAppwrite(formData.email, formData.password);
+
+      if (!session) {
+        throw new Error('Failed to create session');
+      }
+
+      // Get authenticated user
       const appwriteUser = await account.get();
 
+      if (!appwriteUser) {
+        throw new Error('Failed to get user information');
+      }
+
+      // Try to fetch additional user data from MongoDB
       let mongoUser: any = null;
       try {
         const response = await fetch(`${API_BASE_URL}/user/${encodeURIComponent(appwriteUser.email)}`);
         if (response.ok) {
           mongoUser = await response.json();
         }
-      } catch {
-        // Continue with Appwrite user data if MongoDB user fetch fails.
+      } catch (mongoError) {
+        console.warn('Failed to fetch MongoDB user data, using Appwrite data only', mongoError);
       }
 
+      // Merge user data
       const mergedUser = {
-        ...appwriteUser,
+        $id: appwriteUser.$id,
+        email: appwriteUser.email,
+        name: appwriteUser.name || appwriteUser.email,
         ...mongoUser,
         role: mongoUser?.role || 'user',
         userrole: (mongoUser?.role || 'user').toLowerCase(),
+        avatar_url: mongoUser?.avatar_url,
+        preferences: mongoUser?.preferences || { appearance: 'Dark Mode', language: 'English (US)' },
       };
 
+      // Store in localStorage
       localStorage.setItem('user', JSON.stringify(mergedUser));
       localStorage.setItem('isAuthenticated', 'true');
+      setAuthCookie('isAuthenticated', 'true');
 
+      // Try to create and store JWT
       try {
         const jwt = await account.createJWT();
         localStorage.setItem('accessToken', jwt.jwt);
         localStorage.setItem('tokenType', 'Bearer');
-        setAuthCookie('isAuthenticated', 'true');
         setAuthCookie('accessToken', jwt.jwt);
-      } catch {
-        // If JWT creation fails, still proceed with basic login state
+      } catch (jwtError) {
+        console.warn('JWT creation failed, proceeding with session', jwtError);
       }
 
+      // Redirect to chat
       router.push('/chat');
     } catch (err: any) {
       const message = err?.message || 'Login failed. Please try again.';
+      console.error('Login error:', err);
       setError(message);
     } finally {
       setLoading(false);
@@ -70,19 +119,22 @@ export default function LoginPage() {
 
   const handleSocialLogin = async (provider: 'google' | 'microsoft') => {
     setError('');
+    setLoading(true);
 
-    if (provider === 'google') {
-      try {
+    try {
+      if (provider === 'google') {
         await loginWithGoogleAppwrite();
-        return;
-      } catch (err: any) {
-        const message = err?.message || 'Google sign-in failed. Please try again.';
-        setError(message);
-        return;
+      } else if (provider === 'microsoft') {
+        await loginWithMicrosoftAppwrite();
+      } else {
+        throw new Error('Unknown provider');
       }
+    } catch (err: any) {
+      const message = err?.message || `${provider === 'google' ? 'Google' : 'Microsoft'} sign-in failed. Please try again.`;
+      console.error(`${provider} auth error:`, err);
+      setError(message);
+      setLoading(false);
     }
-
-    setError('microsoft sign-in will be implemented soon');
   };
 
   return (
