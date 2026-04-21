@@ -117,6 +117,7 @@ function CheckoutContent() {
         address: "Colombo",
         city: "Colombo",
         country: "Sri Lanka",
+        custom_1: formData.notes || ""
       };
 
       (window as any).payhere.onCompleted = async function onCompleted(orderId: string) {
@@ -134,7 +135,9 @@ function CheckoutContent() {
                 amount: amount.toFixed(2),
                 currency: currency,
                 client_name: formData.fullName,
-                client_email: formData.email
+                client_email: formData.email,
+                client_phone: formData.phone,
+                client_notes: formData.notes
               }
             })
           });

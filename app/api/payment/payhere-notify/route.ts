@@ -60,7 +60,9 @@ export async function POST(req: Request) {
           amount: payhere_amount,
           currency: payhere_currency,
           client_name: `${body.customer_first_name} ${body.customer_last_name}`,
-          client_email: body.customer_email
+          client_email: body.customer_email,
+          client_phone: body.customer_phone,
+          client_notes: body.custom_1
         }
       });
 
