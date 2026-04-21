@@ -22,13 +22,50 @@ const SIDEBAR_NAV = [
 
 export default function LawyerDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [lawyerProfile, setLawyerProfile] = React.useState({
+    name: 'Loading...',
+    title: 'Counsel',
+    avatar: 'https://i.pravatar.cc/150?u=lawyer'
+  });
+
+  React.useEffect(() => {
+    const fetchLawyerInfo = async () => {
+      try {
+        const userJson = localStorage.getItem('user');
+        if (!userJson) {
+          setLawyerProfile(prev => ({ ...prev, name: 'Guest Lawyer' }));
+          return;
+        }
+        
+        const user = JSON.parse(userJson);
+        setLawyerProfile(prev => ({ ...prev, name: user.name || 'Lawyer' }));
+
+        // Fetch additional profile info if available
+        const response = await fetch(`http://localhost:8000/lawyer-dashboard/${user.id}/profile`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.profile) {
+             setLawyerProfile({
+               name: data.profile.fullName || user.name || 'Lawyer',
+               title: data.profile.yearsOfExperience > 10 ? 'Senior Counsel' : 'Counsel',
+               avatar: data.profile.profilePhotoUrl || 'https://i.pravatar.cc/150?u=lawyer'
+             });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load lawyer profile', err);
+      }
+    };
+
+    fetchLawyerInfo();
+  }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9FA] font-sans">
+    <div className="flex h-screen bg-[#F8F9FA] font-sans overflow-hidden">
       
       {/* ---------------- S I D E B A R ---------------- */}
-      <aside className="w-64 bg-[#181B25] text-slate-300 hidden lg:flex flex-col flex-shrink-0 shadow-xl overflow-y-auto">
-        <div className="h-20 flex items-center px-6 sticky top-0 bg-[#181B25] z-10">
+      <aside className="w-64 bg-[#181B25] text-slate-300 hidden lg:flex flex-col flex-shrink-0 shadow-xl overflow-hidden">
+        <div className="h-20 flex items-center px-6 bg-[#181B25] z-10 shrink-0 border-b border-white/5">
           <Link href="/" className="flex items-center gap-3">
             <div className="bg-[#FF9000] p-1.5 rounded-lg flex items-center justify-center">
               <Scale className="h-5 w-5 text-white" strokeWidth={2.5} />
@@ -37,7 +74,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
           </Link>
         </div>
         
-        <div className="flex-1 py-6 px-4">
+        <div className="flex-1 py-6 px-4 overflow-y-auto">
           <p className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-4">Main Menu</p>
           <nav className="space-y-1">
             {SIDEBAR_NAV.map((item) => {
@@ -68,12 +105,12 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
           </nav>
         </div>
 
-        <div className="p-4 mt-auto">
+        <div className="p-4 mt-auto border-t border-white/5">
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition">
-            <img src="https://i.pravatar.cc/150?u=lawyer" alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#2A2E3D]" />
+            <img src={lawyerProfile.avatar} alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#2A2E3D]" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate">Atty. P. Vinodya</p>
-              <p className="text-xs text-slate-500 truncate">Senior Counsel</p>
+              <p className="text-sm font-bold text-white truncate">{lawyerProfile.name}</p>
+              <p className="text-xs text-slate-500 truncate">{lawyerProfile.title}</p>
             </div>
           </div>
         </div>
@@ -83,7 +120,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* Top Header */}
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 sticky top-0">
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0">
           <div className="flex items-center gap-4 max-w-lg w-full">
             <div className="relative w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />

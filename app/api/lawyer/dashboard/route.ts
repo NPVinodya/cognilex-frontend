@@ -72,10 +72,20 @@ export async function PATCH(req: Request) {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
+
+        // 1. Handling Finalize Booking (from Webhook)
+        if (body.slot_id && body.payment_details) {
+            const response = await axios.post(`${API_BASE_URL}/lawyer-dashboard/appointment/finalize`, body, {
+                headers: { "ngrok-skip-browser-warning": "69420" }
+            });
+            return new Response(JSON.stringify(response.data), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        // 2. Handling Slot Creation (existing logic)
         const { lawyerId, date, time, type, location } = body;
-
-        console.log('Proxy POST slot:', { lawyerId, date, time, type, location });
-
         if (!lawyerId || !date || !time) {
             return new Response(JSON.stringify({ message: "Required fields missing" }), { status: 400 });
         }
@@ -91,16 +101,14 @@ export async function POST(req: Request) {
             headers: { "ngrok-skip-browser-warning": "69420" }
         });
 
-        console.log('Backend response:', response.data);
-
         return new Response(JSON.stringify(response.data), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
     } catch (err: any) {
-        console.error('Slot creation proxy error:', err.response?.data || err.message);
+        console.error('API proxy error:', err.response?.data || err.message);
         return new Response(
-            JSON.stringify({ message: err.response?.data?.detail || "Creation failed" }),
+            JSON.stringify({ message: err.response?.data?.detail || "Action failed" }),
             { status: err.response?.status || 500 }
         );
     }

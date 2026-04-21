@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Scale, LogIn, UserPlus, LogOut, Home, Info, Briefcase, Users, Mail, Menu, X, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function Header() {
       name: 'Services',
       icon: Briefcase,
       dropdown: [
-        { name: 'Find Lawyers', path: '/appointmentFind' },
+        { name: 'Find Lawyers', path: '/lawyer' },
         { name: 'AI Legal Chat', path: '/chat' },
         { name: 'Appointments', path: '/appointmentManage' },
       ]
@@ -90,7 +92,7 @@ export default function Header() {
                             router.push(dropItem.path);
                             setServicesOpen(false);
                           }}
-                          className="w-full text-left px-4 py-2.5 text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors duration-200 font-medium"
+                          className={`w-full text-left px-4 py-2.5 transition-colors duration-200 font-medium ${pathname === dropItem.path ? 'bg-amber-50 text-amber-700' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
                         >
                           {dropItem.name}
                         </button>
