@@ -24,7 +24,7 @@ export default function LawyerProfilePage() {
 
   const getWeekDays = (baseDate: Date) => {
     const days = [];
-    for (let i = -3; i <= 3; i++) {
+    for (let i = 0; i <= 6; i++) {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() + i);
       days.push({
@@ -42,6 +42,15 @@ export default function LawyerProfilePage() {
   const shiftWeek = (direction: number) => {
     const newPivot = new Date(pivotDate);
     newPivot.setDate(pivotDate.getDate() + (direction * 7));
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (newPivot < today && direction < 0) {
+      setPivotDate(today);
+      return;
+    }
+    
     setPivotDate(newPivot);
   };
 
@@ -62,7 +71,42 @@ export default function LawyerProfilePage() {
         const slotsRes = await fetch(`/api/lawyer/dashboard?lawyerId=${id}&type=appointments`);
         const slotsData = await slotsRes.json();
         if (slotsData.success) {
-          const formatted = (slotsData.slots || []).map((s: any) => ({
+          const now = new Date();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          let filteredSlots = (slotsData.slots || []).filter((s: any) => {
+            const sessionDate = new Date(s.date);
+            sessionDate.setHours(0, 0, 0, 0);
+
+            if (sessionDate < today) return false;
+
+            if (sessionDate.getTime() === today.getTime() && s.time) {
+              try {
+                // Approximate time parsing "hh:mm AM" or "hh.mm AM"
+                const startTimeStr = s.time.split('-')[0].trim();
+                const clean = startTimeStr.replace('.', ':');
+                const [timePart, period] = clean.split(' ');
+                
+                if (timePart) {
+                  let [h, m] = timePart.split(':').map(Number);
+                  if (period && period.toUpperCase() === 'PM' && h < 12) h += 12;
+                  if (period && period.toUpperCase() === 'AM' && h === 12) h = 0;
+                  
+                  const sessionTime = new Date();
+                  sessionTime.setHours(h, m || 0, 0, 0);
+                  
+                  // Hide if slot starts in the past
+                  if (sessionTime <= now) return false;
+                }
+              } catch (e) {
+                // If parsing fails, fall through to keep it visible
+              }
+            }
+            return true;
+          });
+
+          const formatted = filteredSlots.map((s: any) => ({
             id: s.id,
             date: s.date,
             day: new Date(s.date).toLocaleString('default', { weekday: 'long' }),

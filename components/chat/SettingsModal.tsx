@@ -128,9 +128,18 @@ export default function SettingsModal({
         onUpdateUser({ ...currentUser, preferences: { appearance, language } });
       }
       alert("Preferences updated successfully!");
-      // Optionally apply dark mode to document here if appearance changes
-      if (appearance === "Dark Mode") document.documentElement.classList.add("dark");
-      if (appearance === "Light Mode") document.documentElement.classList.remove("dark");
+      
+      // PROTECTION: Only apply dark mode if we aren't on a protected route
+      // This prevents the "white-on-white" visibility issue on the dashboard
+      const isProtectedRoute = 
+        window.location.pathname.toLowerCase().includes("lawyerdashboard") || 
+        window.location.pathname.toLowerCase().includes("lawyerregistation");
+
+      if (appearance === "Dark Mode" && !isProtectedRoute) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
     } catch (err: any) {
       let errorMsg = err.response?.data?.message || err.response?.data || err.message;
       if (typeof errorMsg === 'string' && errorMsg.includes("<!DOCTYPE html>")) {
