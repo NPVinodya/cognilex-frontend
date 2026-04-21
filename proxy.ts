@@ -1,80 +1,89 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-export default function proxy(request: NextRequest) {
-    const path = request.nextUrl.pathname;
-    const allCookies = request.cookies.getAll();
+export const AUTH_COOKIES = {
+  isAuthenticated: "isAuthenticated",
+  accessToken: "accessToken",
+  accessTokenHttpOnly: "access_token",
+  adminIsAuthenticated: "isAdminAuthenticated",
+  adminAccessToken: "adminAccessToken",
+} as const;
 
-    const getCookieValue = (name: string) => request.cookies.get(name)?.value?.trim();
-    const hasNonEmptyCookie = (name: string) => {
-        const value = getCookieValue(name);
-        return Boolean(value && value !== "undefined" && value !== "null");
-    };
-    const isTrueCookie = (name: string) => getCookieValue(name) === "true";
-
-    const hasAppwriteSessionCookie = allCookies.some((cookie) =>
-        cookie.name.startsWith("a_session_") || cookie.name.startsWith("a_session_legacy_")
-    );
-
-    // --- ADMIN AUTHENTICATION CHECKS ---
-    // Check for tokens that you set in `adminLogin.tsx`
-    const hasAdminToken = hasNonEmptyCookie("adminAccessToken");
-    const isAdminAuthenticated = isTrueCookie("isAdminAuthenticated");
-    const isAdminLoggedIn = hasAdminToken || isAdminAuthenticated;
-
-    // Define what an admin route is
-    const isAdminRoute = path.startsWith("/adminDashboard") || path.startsWith("/admin_Dashboard");
-    const isAdminLoginRoute = path.startsWith("/admin/login");
-
-
-    // --- REGULAR USER AUTHENTICATION CHECKS ---
-    // These cookie names come from `legacy_pages/login_page.tsx`.
-    const hasUserToken = hasNonEmptyCookie("accessToken");
-    const isUserAuthenticated = isTrueCookie("isAuthenticated");
-    const isFromOAuth = request.nextUrl.searchParams.get("provider") === "oauth";
-    const isUserLoggedIn = hasUserToken || hasAppwriteSessionCookie || isUserAuthenticated || isFromOAuth;
-
-    // Define what a regular user route is
-    const isUserDashboardRoute = path.startsWith("/lawyerDashboard") || path.startsWith("/chat");
-    const isUserLoginRoute = path === "/login";
-
-
-    // ==========================================
-    // ROUTING LOGIC & REDIRECTS
-    // ==========================================
-
-    // 1. Protect Admin Routes
-    if (isAdminRoute && !isAdminLoggedIn) {
-        return NextResponse.redirect(new URL("/admin/login", request.url));
+function getCookieFromHeader(cookieHeader: string, name: string): string | null {
+  const parts = cookieHeader.split(";");
+  for (const part of parts) {
+    const [rawKey, ...rawValueParts] = part.trim().split("=");
+    if (!rawKey) continue;
+    if (rawKey === name) {
+      const rawValue = rawValueParts.join("=");
+      try {
+        return decodeURIComponent(rawValue);
+      } catch {
+        return rawValue;
+      }
     }
-
-    // 2. Prevent logged-in Admin from seeing Admin login page
-    if (isAdminLoginRoute && isAdminLoggedIn) {
-        return NextResponse.redirect(new URL("/adminDashboard", request.url));
-    }
-
-    // 3. Protect User Routes
-    if (isUserDashboardRoute && !isUserLoggedIn) {
-        return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // 4. Prevent logged-in User from seeing the main user login page
-    if (isUserLoginRoute && isUserLoggedIn) {
-        return NextResponse.redirect(new URL("/chat", request.url));
-    }
-
-    // If none of the protections are triggered, let the user load the page normally
-    return NextResponse.next();
+  }
+  return null;
 }
 
-// This tells Next.js exactly WHICH routes this Proxy file should execute on
+export function getAuthTokenFromCookieHeader(cookieHeader: string | null): string | null {
+  if (!cookieHeader) return null;
+  return (
+    getCookieFromHeader(cookieHeader, AUTH_COOKIES.accessTokenHttpOnly) ??
+    getCookieFromHeader(cookieHeader, AUTH_COOKIES.accessToken) ??
+    null
+  );
+}
+
+export function isAuthenticatedFromCookieHeader(cookieHeader: string | null): boolean {
+  if (!cookieHeader) return false;
+  const token = getAuthTokenFromCookieHeader(cookieHeader);
+  if (token) return true;
+  const authFlag = getCookieFromHeader(cookieHeader, AUTH_COOKIES.isAuthenticated);
+  return authFlag === "true";
+}
+
+export function isAuthenticatedFromRequest(req: Request): boolean {
+  const cookieHeader = req.headers.get("cookie");
+  return isAuthenticatedFromCookieHeader(cookieHeader);
+}
+
+export function isAuthenticatedFromNextRequestCookies(cookies: {
+  get(name: string): { value: string } | undefined;
+}): boolean {
+  const token =
+    cookies.get(AUTH_COOKIES.accessTokenHttpOnly)?.value ??
+    cookies.get(AUTH_COOKIES.accessToken)?.value ??
+    null;
+  if (token) return true;
+  return cookies.get(AUTH_COOKIES.isAuthenticated)?.value === "true";
+}
+
+export function logoutSetCookieHeaders(): string[] {
+  const expires = "Thu, 01 Jan 1970 00:00:00 GMT";
+  const base = `Path=/; Expires=${expires}; Max-Age=0`;
+
+  return [
+    `${AUTH_COOKIES.isAuthenticated}=; ${base}; SameSite=Lax`,
+    `${AUTH_COOKIES.accessToken}=; ${base}; SameSite=Lax`,
+    `${AUTH_COOKIES.accessTokenHttpOnly}=; ${base}; SameSite=Strict; HttpOnly; Secure`,
+    `${AUTH_COOKIES.adminIsAuthenticated}=; ${base}; SameSite=Lax`,
+    `${AUTH_COOKIES.adminAccessToken}=; ${base}; SameSite=Lax`,
+  ];
+}
+
+export function middleware(req: NextRequest) {
+  if (!isAuthenticatedFromNextRequestCookies(req.cookies)) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", req.nextUrl.pathname);
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
+
 export const config = {
-    matcher: [
-        "/lawyerDashboard/:path*",
-        "/chat/:path*",
-        "/login",
-        "/adminDashboard/:path*",
-        "/admin/login",
-        "/admin/login/:path*",
-    ],
+  matcher: ["/chat/:path*"],
 };
+
+export default middleware;

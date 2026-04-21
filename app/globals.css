@@ -161,3 +161,8 @@
     background: rgba(217, 119, 6, 0.4); /* amber-600/40 */
   }
 }
+
+::view-transition-old(root), ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Scale, ArrowLeft, UserPlus, AlertCircle, CheckCircle } from "lucide-react";
 import Link from 'next/link';
-import { account, clearActiveAppwriteSession, finalizeOtpRegistration, sendRegistrationOtp, verifyRegistrationOtp, loginWithGoogleAppwrite } from "@/lib/appwrite";
+import { account, clearActiveAppwriteSession, finalizeOtpRegistration, sendRegistrationOtp, verifyRegistrationOtp, loginWithGoogleAppwrite, loginWithMicrosoftAppwrite } from "@/lib/appwrite";
 import { API_BASE_URL } from "@/lib/constants";
 
 export default function RegisterPage() {
@@ -79,18 +79,20 @@ export default function RegisterPage() {
     const handleSocialLogin = async (provider: 'google' | 'microsoft') => {
         setError("");
 
-        if (provider === 'google') {
-            try {
+        try {
+            if (provider === 'google') {
                 await loginWithGoogleAppwrite();
                 return;
-            } catch (err: any) {
-                const message = err?.message || "Google sign-up failed. Please try again.";
-                setError(message);
+            } else if (provider === 'microsoft') {
+                await loginWithMicrosoftAppwrite();
                 return;
+            } else {
+                throw new Error('Unknown provider');
             }
+        } catch (err: any) {
+            const message = err?.message || `${provider === 'google' ? 'Google' : 'Microsoft'} sign-up failed. Please try again.`;
+            setError(message);
         }
-
-        setError("Microsoft sign-up will be implemented soon");
     };
 
     const handleVerifyOtp = async (e: React.FormEvent) => {

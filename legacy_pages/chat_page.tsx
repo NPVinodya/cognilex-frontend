@@ -1,14 +1,14 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import page from "@/app/page";
+import ReactMarkdown from "react-markdown";
 import SettingsModal from "@/components/chat/SettingsModal";
 import CorporatePlanModal from "@/components/chat/CorporatePlanModal";
 import SupportDeskModal from "@/components/chat/SupportDeskModal";
-import { API_BASE_URL } from "@/lib/constants";
-import { account } from "@/lib/appwrite";
+import { useRouter } from "next/navigation";
+import { logoutFromAppwrite } from "@/lib/appwrite";
 
 export default function CogniLexAI() {
+  const router = useRouter();
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,7 +26,6 @@ export default function CogniLexAI() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
 
   const BASE_URL = "https://unbonneted-stratagemical-hal.ngrok-free.dev";
 
@@ -64,124 +63,36 @@ export default function CogniLexAI() {
     }
   };
 
-  // --- Load Logged-in User ---
+  // --- Load User Data from Storage ---
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const syncUserFromStorageAndMongo = async () => {
-      let isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
-      let storedUser = localStorage.getItem("user");
+    try {
+      const storedUser = localStorage.getItem("user");
 
-      // OAuth redirects can arrive with Appwrite session cookie but without local storage.
-      if (!isAuthenticated || !storedUser) {
-        try {
-          const appwriteUser = await account.get();
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        const appearance = parsed?.preferences?.appearance || "Dark Mode";
 
-          // Upsert this OAuth user into MongoDB so they have a proper record with role="user".
-          let mongoUser: any = null;
-          try {
-            const oauthRes = await fetch(`${API_BASE_URL}/register-oauth`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                appwrite_id: appwriteUser.$id,
-                email: appwriteUser.email,
-                name: appwriteUser.name || appwriteUser.email,
-              }),
-            });
-            if (oauthRes.ok) {
-              const oauthData = await oauthRes.json();
-              mongoUser = oauthData?.user ?? null;
-            }
-          } catch {
-            // Backend unavailable — fall back to Appwrite-only data.
-          }
-
-          const seedUser = {
-            ...appwriteUser,
-            ...mongoUser,
-            role: mongoUser?.role || "user",
-            userrole: (mongoUser?.role || "user").toLowerCase(),
-          };
-          localStorage.setItem("user", JSON.stringify(seedUser));
-          localStorage.setItem("isAuthenticated", "true");
-
-          try {
-            const jwt = await account.createJWT();
-            localStorage.setItem("accessToken", jwt.jwt);
-            localStorage.setItem("tokenType", "Bearer");
-            document.cookie = `isAuthenticated=true; Path=/; Max-Age=604800; SameSite=Lax`;
-            document.cookie = `accessToken=${encodeURIComponent(jwt.jwt)}; Path=/; Max-Age=604800; SameSite=Lax`;
-          } catch {
-            // Appwrite session cookie is enough to keep route access when JWT cannot be created.
-          }
-
-          isAuthenticated = true;
-          storedUser = localStorage.getItem("user");
-        } catch {
-          router.push("/login");
-          return;
-        }
-      }
-
-
-      try {
-        const parsed = JSON.parse(storedUser ?? "{}");
-        const parsedAppearance = parsed?.preferences?.appearance || "Dark Mode";
-
-        // Apply saved appearance immediately so UI does not wait for API round trip.
-        if (parsedAppearance === "Dark Mode" || parsedAppearance === "System Default") {
+        // Apply saved appearance
+        if (appearance === "Dark Mode" || appearance === "System Default") {
           document.documentElement.classList.add("dark");
         } else {
           document.documentElement.classList.remove("dark");
         }
 
-        const email = parsed?.email || "";
-
-        let mongoUser: any = null;
-        if (email) {
-          try {
-            const response = await fetch(`${API_BASE_URL}/user/${encodeURIComponent(email)}`);
-            if (response.ok) {
-              mongoUser = await response.json();
-            }
-          } catch (fetchError) {
-            console.error("Failed to fetch MongoDB user data", fetchError);
-          }
-        }
-
-        const mergedUser = {
-          ...parsed,
-          ...mongoUser,
-          role: mongoUser?.role || parsed?.role || parsed?.userrole || "user",
-          userrole: (mongoUser?.role || parsed?.role || parsed?.userrole || "user").toLowerCase(),
-          preferences: mongoUser?.preferences || parsed?.preferences || { appearance: "Dark Mode", language: "English (US)" },
-        };
-
-        localStorage.setItem("user", JSON.stringify(mergedUser));
-
-        const currentAppearance = mergedUser.preferences?.appearance || "Dark Mode";
         setCurrentUser({
-          name: mergedUser.name || mergedUser.email || "User",
-          email: mergedUser.email || "",
-          userrole: mergedUser.userrole,
-          avatar_url: mergedUser.avatar_url,
-          preferences: mergedUser.preferences,
+          name: parsed.name || "User",
+          email: parsed.email || "",
+          userrole: parsed.userrole || "user",
+          avatar_url: parsed.avatar_url,
+          preferences: parsed.preferences || { appearance: "Dark Mode", language: "English (US)" },
         });
-
-        if (currentAppearance === "Dark Mode" || currentAppearance === "System Default") {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
-      } catch (parseError) {
-        console.error("Failed to read session user", parseError);
-        router.push("/login");
       }
-    };
-
-    syncUserFromStorageAndMongo();
-  }, [router]);
+    } catch (error) {
+      console.error("Failed to load user data", error);
+    }
+  }, []);
 
   const getUserInitials = (name?: string, email?: string) => {
     const source = name || email || "User";
@@ -192,14 +103,26 @@ export default function CogniLexAI() {
     return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window !== "undefined") {
+      try {
+        await logoutFromAppwrite();
+      } catch {
+        // Ignore; client-side session might already be cleared.
+      }
+
+      try {
+        await fetch("/api/logout", { method: "POST" });
+      } catch {
+        // Ignore; we still clear client storage below.
+      }
+
       localStorage.removeItem("user");
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("tokenType");
 
-      // Crucial: Clear cookies so the middleware proxy knows you are logged out
+      // Clear non-HttpOnly cookies (HttpOnly cookies are cleared via /api/logout)
       document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
@@ -245,9 +168,9 @@ export default function CogniLexAI() {
     stopSpeaking();
 
     try {
-      const res = await fetch(`${BASE_URL}/ask`, {
+      const res = await fetch(`/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "69420" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: userMsg.content }),
       });
       const data = await res.json();
@@ -463,10 +386,41 @@ export default function CogniLexAI() {
               )}
               {messages.map((msg, i) => (
                 <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} animate-in slide-in-from-bottom-2`}>
-                  <div className={`max-w-[85%] p-5 rounded-[2rem] ${msg.role === 'user' ? 'bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-br-none shadow-md object-none' : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 rounded-bl-none shadow-md'}`}>
-                    <p className="text-[15px] leading-relaxed whitespace-pre-wrap font-light tracking-wide text-justify">{msg.content}</p>
+                  <div className={`max-w-[88%] p-6 rounded-[2.5rem] shadow-xl transition-all duration-300 relative overflow-hidden ${msg.role === 'user' ? 'bg-gradient-to-br from-amber-600 to-amber-700 text-white rounded-br-none font-medium' : 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-white/10 rounded-bl-none'}`}>
+                    {msg.role !== 'user' && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-500 to-amber-700"></div>
+                    )}
+                    <div className={`text-[15.5px] leading-relaxed tracking-wide font-sans ${msg.role !== 'user' ? 'pl-2' : ''}`}>
+                      {msg.role === 'user' ? (
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <ReactMarkdown 
+                          components={{ 
+                            p: ({ ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                            strong: ({ ...props }) => (
+                              <strong className="font-extrabold text-amber-700 dark:text-amber-400 bg-amber-600/5 dark:bg-amber-400/10 px-1.5 py-0.5 rounded-md border-b-2 border-amber-500/20" {...props} />
+                            ),
+                            h3: ({ ...props }) => (
+                              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-3 mt-1 font-outfit uppercase tracking-wider" {...props} />
+                            ),
+                            ul: ({ ...props }) => <ul className="space-y-2 mb-4 list-none pl-1" {...props} />,
+                            li: ({ ...props }) => (
+                              <li className="flex items-start gap-3" {...props}>
+                                <span className="mt-2 w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                                <div>{props.children}</div>
+                              </li>
+                            ),
+                            blockquote: ({ ...props }) => (
+                              <blockquote className="border-l-4 border-slate-300 dark:border-slate-700 pl-4 py-1 italic text-slate-500 dark:text-slate-400 mb-4" {...props} />
+                            )
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-[9px] mt-2 text-slate-600 font-bold px-2 uppercase tracking-tighter">{msg.time}</span>
+                  <span className="text-[10px] mt-3 text-slate-400 dark:text-slate-500 font-bold px-5 uppercase tracking-[0.2em]">{msg.time}</span>
                 </div>
               ))}
               <div ref={scrollRef} />

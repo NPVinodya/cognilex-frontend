@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Edit, Trash2,
-    Users, TrendingUp, Star, Settings, ChevronRight, ChevronLeft
+    Users, TrendingUp, Star, Settings, ChevronRight, ChevronLeft, CheckCircle2,
+    X, Info, User, FileText, XCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,8 @@ export default function LawyerDashboard() {
     const [loading, setLoading] = useState(true);
     const [loadingProgress, setLoadingProgress] = useState(18);
     const [isAddSlotOpen, setIsAddSlotOpen] = useState(false);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [selectedApt, setSelectedApt] = useState<any>(null);
     const [newSlot, setNewSlot] = useState({ date: '', time: '', type: 'Consultation', location: '' });
     const [isSaving, setIsSaving] = useState(false);
 
@@ -73,48 +76,100 @@ export default function LawyerDashboard() {
 
     const filteredSlots = availabilitySlots.filter(s => s.date === selectedDate);
 
-    const fetchData = async () => {
+    const fetchData = async (isSilent = false) => {
         try {
             const storedUser = localStorage.getItem("user");
             if (!storedUser) {
-                setLoadingProgress(100);
-                setLoading(false);
+                if (!isSilent) {
+                    setLoadingProgress(100);
+                    setLoading(false);
+                }
                 return;
             }
 
             const user = JSON.parse(storedUser);
-            const lawyerId = user.id || user._id;
+            let currentLawyerId = user.id || user._id;
+
+            // Fallback: If lawyerId is missing from standard keys, try to find it via email
+            if (!currentLawyerId && user.email) {
+                try {
+                    const profileRes = await fetch(`/api/lawyer/all?email=${encodeURIComponent(user.email)}`);
+                    const profileData = await profileRes.json();
+                    if (profileData.success && profileData.lawyers?.length > 0) {
+                        currentLawyerId = profileData.lawyers[0].id || profileData.lawyers[0]._id;
+                    }
+                } catch (e) {
+                    console.error("Email fallback check failed", e);
+                }
+            }
+
             if (user.name) setLawyerName(user.name.split(' ')[0]);
 
-            if (!lawyerId) {
-                setLoadingProgress(100);
-                setLoading(false);
+            if (!currentLawyerId) {
+                if (!isSilent) {
+                    setLoadingProgress(100);
+                    setLoading(false);
+                }
                 return;
             }
 
-            // Fetch Stats
-            setLoadingProgress(45);
-            const statsRes = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=stats`);
-            const statsData = await statsRes.json();
-            if (statsData.success) setStats(statsData.stats);
+            if (!isSilent) setLoadingProgress(45);
+            
+            // Fetch Stats and Appointments in parallel for efficiency
+            const [statsRes, slotsRes] = await Promise.all([
+                fetch(`/api/lawyer/dashboard?lawyerId=${currentLawyerId}&type=stats`),
+                fetch(`/api/lawyer/dashboard?lawyerId=${currentLawyerId}&type=appointments`)
+            ]);
 
-            // Fetch Appointments
-            setLoadingProgress(78);
-            const slotsRes = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=appointments`);
+            if (!isSilent) setLoadingProgress(78);
+
+            const statsData = await statsRes.json();
             const slotsData = await slotsRes.json();
+
+            // Calculate Today's counts from slots
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayBookings = (slotsData.slots || []).filter((s: any) => s.date === todayStr && s.isBooked).length;
+            const todayTotalSlots = (slotsData.slots || []).filter((s: any) => s.date === todayStr).length;
+
+            // Handle various possible response structures for Stats
+            const statsObj = statsData.stats || (statsData.success ? statsData : null);
+
+            if (statsObj) {
+                // Normalize stats data (handle both snake_case and camelCase)
+                const normalizedStats = {
+                    totalBookings: statsObj.totalBookings ?? statsObj.total_bookings ?? statsObj.bookings_count ?? 0,
+                    todayBookings: todayBookings,
+                    todaySlots: todayTotalSlots,
+                    pendingRequests: statsObj.pendingRequests ?? statsObj.pending_requests ?? statsObj.pending_count ?? 0,
+                    activeClients: statsObj.activeClients ?? statsObj.active_clients ?? statsObj.clients_count ?? 0
+                };
+                setStats(normalizedStats);
+            }
+            
             if (slotsData.success) setAvailabilitySlots(slotsData.slots || []);
 
-            setLoadingProgress(100);
-            setLoading(false);
+            if (!isSilent) {
+                setLoadingProgress(100);
+                setTimeout(() => setLoading(false), 300);
+            }
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
-            setLoadingProgress(100);
-            setLoading(false);
+            if (!isSilent) {
+                setLoadingProgress(100);
+                setLoading(false);
+            }
         }
     };
 
     useEffect(() => {
         fetchData();
+        
+        // Auto-refresh every 30 seconds
+        const interval = setInterval(() => {
+            fetchData(true);
+        }, 30000);
+
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -191,11 +246,47 @@ export default function LawyerDashboard() {
             const data = await res.json();
             if (data.success) {
                 setAvailabilitySlots(availabilitySlots.filter(slot => slot.id !== id));
+                if (isDetailModalOpen) setIsDetailModalOpen(false);
             } else {
                 alert(data.message || "Failed to remove slot");
             }
         } catch (error) {
             alert("Error removing slot");
+        }
+    };
+
+    const handleUpdateStatus = async (id: string, newStatus: string) => {
+        try {
+            const apiStatus = newStatus.toLowerCase();
+            const res = await fetch('/api/lawyer/dashboard', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appointmentId: id, status: apiStatus })
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Update local state
+                setAvailabilitySlots(prev => prev.map(apt => 
+                    apt.id === id ? { ...apt, status: newStatus } : apt
+                ));
+                if (selectedApt && selectedApt.id === id) {
+                    setSelectedApt({ ...selectedApt, status: newStatus });
+                }
+                fetchData(true); // Silent refresh to keep stats in sync
+            }
+        } catch (error) {
+            alert("Failed to update status.");
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'Confirmed': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+            case 'Pending': return 'bg-orange-50 text-[#FF9000] border-orange-100';
+            case 'Completed': return 'bg-blue-50 text-blue-600 border-blue-100';
+            case 'Canceled': return 'bg-rose-50 text-rose-600 border-rose-100';
+            case 'Available': return 'bg-slate-50 text-slate-500 border-slate-200';
+            default: return 'bg-slate-50 text-slate-600';
         }
     };
 
@@ -214,12 +305,13 @@ export default function LawyerDashboard() {
 
             {/* Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {/* Total Bookings Card */}
                 <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
                     <div className="flex justify-between items-start mb-6">
                         <div className="p-3 bg-orange-50 text-[#FF9000] rounded-xl">
                             <CalendarIcon className="w-6 h-6" />
                         </div>
-                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold">+2%</Badge>
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold">All Time</Badge>
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Total Bookings</p>
@@ -227,36 +319,41 @@ export default function LawyerDashboard() {
                     </div>
                 </div>
 
-                <div className="bg-[#FF9000] p-6 py-7 rounded-2xl border border-[#FF9000] shadow-[0_8px_20px_-8px_rgba(255,144,0,0.4)] flex flex-col justify-between hover:shadow-lg hover:-translate-y-0.5 transition text-white">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-white/20 text-white rounded-xl backdrop-blur-sm">
-                            <Star className="w-6 h-6" />
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-orange-100 uppercase tracking-widest mb-1.5">Profile Views</p>
-                        <h3 className="text-[32px] font-black text-white leading-none">{stats?.profileViews?.toLocaleString() || "0"}</h3>
-                    </div>
-                </div>
-
-                <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-orange-50 text-[#FF9000] rounded-xl">
-                            <Clock className="w-6 h-6" />
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Pending Requests</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.pendingRequests || 0}</h3>
-                    </div>
-                </div>
-
+                {/* Today's Bookings Card */}
                 <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
                     <div className="flex justify-between items-start mb-6">
                         <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl">
                             <Users className="w-6 h-6" />
                         </div>
-                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold">+12%</Badge>
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold">Real-time</Badge>
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Bookings</p>
+                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.todayBookings || 0}</h3>
+                    </div>
+                </div>
+
+                {/* Today's Total Slots Card */}
+                <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="p-3 bg-blue-50 text-blue-500 rounded-xl">
+                            <Clock className="w-6 h-6" />
+                        </div>
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-50 border-none font-bold">Today</Badge>
+                    </div>
+                    <div>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Total Slots</p>
+                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.todaySlots || 0}</h3>
+                    </div>
+                </div>
+
+                {/* Active Clients Card */}
+                <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="p-3 bg-orange-50 text-[#FF9000] rounded-xl">
+                            <Star className="w-6 h-6" />
+                        </div>
+                        <Badge variant="secondary" className="bg-orange-50 text-orange-600 hover:bg-orange-50 border-none font-bold">Active</Badge>
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Active Clients</p>
@@ -383,7 +480,10 @@ export default function LawyerDashboard() {
 
                                                     <div className="shrink-0">
                                                         {slot.isBooked ? (
-                                                            <button className="px-5 py-2.5 bg-[#181B25] hover:bg-[#0e1017] text-white text-sm font-bold rounded-full transition w-full sm:w-auto shadow-sm">
+                                                            <button 
+                                                                onClick={() => { setSelectedApt(slot); setIsDetailModalOpen(true); }}
+                                                                className="px-5 py-2.5 bg-[#181B25] hover:bg-[#0e1017] text-white text-sm font-bold rounded-full transition w-full sm:w-auto shadow-sm"
+                                                            >
                                                                 View Details
                                                             </button>
                                                         ) : (
@@ -412,35 +512,60 @@ export default function LawyerDashboard() {
                 {/* Right Side Tools */}
                 <div className="lg:col-span-4 flex flex-col gap-6">
 
-                    {/* Quick Actions Card */}
-                    <div className="bg-[#181B25] rounded-2xl p-6 text-white overflow-hidden relative shadow-lg">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-orange-400/20 to-transparent blur-2xl"></div>
+                    {/* Quick Actions Card - Premium White Style */}
+                    <div className="bg-white rounded-[2rem] p-7 text-slate-900 overflow-hidden relative shadow-2xl border border-slate-100 group/card">
+                        {/* Soft atmospheric glows for light mode */}
+                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-orange-200/40 to-transparent blur-[80px] group-hover/card:scale-125 transition-transform duration-700"></div>
+                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-blue-100/30 to-transparent blur-[80px]"></div>
 
-                        <h3 className="text-base font-bold mb-5 flex items-center gap-2">
-                            <Settings className="w-5 h-5 text-[#FF9000]" />
+                        <h3 className="text-[17px] font-bold mb-6 flex items-center gap-2.5 relative z-10">
+                            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center border border-orange-200">
+                                <Settings className="w-4 h-4 text-[#FF9000]" />
+                            </div>
                             Quick Actions
                         </h3>
-                        <div className="space-y-3 relative z-10 block">
+
+                        <div className="space-y-3.5 relative z-10">
                             <button
                                 onClick={() => setIsAddSlotOpen(true)}
-                                className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition group"
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
                             >
-                                <div className="bg-[#2A2E3D] text-[#FF9000] p-2.5 rounded-full group-hover:scale-110 transition duration-300"><Plus className="w-4 h-4" /></div>
-                                <span className="font-bold text-sm text-slate-200">Add New Slot</span>
+                                <div className="bg-orange-100 text-[#FF9000] p-2.5 rounded-xl border border-orange-200 group-hover/btn:scale-110 group-hover/btn:bg-orange-200 transition duration-300">
+                                    <Plus className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <span className="font-bold text-[14px] text-slate-900 block">Add New Slot</span>
+                                    <span className="text-[10px] text-slate-400 font-medium tracking-tight">Create client availability</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-orange-500 transition-colors" />
                             </button>
+
                             <button
                                 onClick={() => router.push('/lawyerDashboard/settings')}
-                                className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition group"
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
                             >
-                                <div className="bg-[#2A2E3D] text-[#984FFF] p-2.5 rounded-full group-hover:scale-110 transition duration-300"><Edit className="w-4 h-4" /></div>
-                                <span className="font-bold text-sm text-slate-200">Update Profile Details</span>
+                                <div className="bg-purple-100 text-[#984FFF] p-2.5 rounded-xl border border-purple-200 group-hover/btn:scale-110 group-hover/btn:bg-purple-200 transition duration-300">
+                                    <Edit className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <span className="font-bold text-[14px] text-slate-900 block">Update Profile</span>
+                                    <span className="text-[10px] text-slate-400 font-medium tracking-tight">Modify public details</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-purple-500 transition-colors" />
                             </button>
+
                             <button
                                 onClick={() => router.push('/lawyerDashboard/analytics')}
-                                className="w-full flex items-center gap-4 p-3.5 rounded-xl bg-[#222635] hover:bg-[#2A2E3D] border border-slate-700/50 transition group"
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
                             >
-                                <div className="bg-[#2A2E3D] text-[#10B981] p-2.5 rounded-full group-hover:scale-110 transition duration-300"><TrendingUp className="w-4 h-4" /></div>
-                                <span className="font-bold text-sm text-slate-200">View Analytics Report</span>
+                                <div className="bg-emerald-100 text-[#10B981] p-2.5 rounded-xl border border-emerald-200 group-hover/btn:scale-110 group-hover/btn:bg-emerald-200 transition duration-300">
+                                    <TrendingUp className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <span className="font-bold text-[14px] text-slate-900 block">View Analytics</span>
+                                    <span className="text-[10px] text-slate-400 font-medium tracking-tight">Track performance metrics</span>
+                                </div>
+                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-emerald-500 transition-colors" />
                             </button>
                         </div>
                     </div>
@@ -448,21 +573,42 @@ export default function LawyerDashboard() {
                     {/* Action Required Card */}
                     <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)]">
                         <h3 className="font-bold text-[#181B25] mb-4 flex items-center gap-2 text-base">
-                            <Star className="w-5 h-5 text-[#FF9000]" /> Action Required
+                            <Star className="w-5 h-5 text-[#FF9000]" /> {stats?.pendingRequests > 0 ? "Action Required" : "System Status"}
                         </h3>
-                        <div className="bg-rose-50 border border-rose-100 rounded-xl p-5">
-                            <div className="flex items-start gap-4">
-                                <span className="relative flex h-2.5 w-2.5 mt-1.5 shrink-0">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-                                </span>
-                                <div>
-                                    <p className="font-bold text-[#181B25] text-sm">Review Pending Documents</p>
-                                    <p className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">Client "Nimal Silva" uploaded new case files regarding property dispute.</p>
-                                    <button className="mt-4 text-[13px] font-bold text-rose-600 hover:text-rose-700 transition">Review Now</button>
+                        {stats?.pendingRequests > 0 ? (
+                            <div className="bg-rose-50 border border-rose-100 rounded-xl p-5">
+                                <div className="flex items-start gap-4">
+                                    <span className="relative flex h-2.5 w-2.5 mt-1.5 shrink-0">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                                    </span>
+                                    <div>
+                                        <p className="font-bold text-[#181B25] text-sm">Review Pending Bookings</p>
+                                        <p className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">
+                                            You have {stats.pendingRequests} new consultation requests that need your review and confirmation.
+                                        </p>
+                                        <button 
+                                            onClick={() => router.push('/lawyerDashboard/appointments')}
+                                            className="mt-4 text-[13px] font-bold text-rose-600 hover:text-rose-700 transition"
+                                        >
+                                            Review Appointments
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
+                                <div className="flex items-start gap-4">
+                                     <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-bold text-[#181B25] text-sm">Everything is clear</p>
+                                        <p className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">
+                                            No pending actions at the moment. Your practice is up-to-date.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                 </div>
@@ -481,7 +627,7 @@ export default function LawyerDashboard() {
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Date</label>
                                     <input
                                         type="date"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
                                         value={newSlot.date}
                                         onChange={e => setNewSlot({ ...newSlot, date: e.target.value })}
                                     />
@@ -491,7 +637,7 @@ export default function LawyerDashboard() {
                                     <input
                                         type="text"
                                         placeholder="10:00 AM - 11:00 AM"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
                                         value={newSlot.time}
                                         onChange={e => setNewSlot({ ...newSlot, time: e.target.value })}
                                     />
@@ -501,7 +647,7 @@ export default function LawyerDashboard() {
                                     <input
                                         type="text"
                                         placeholder="e.g. No 123, Galle Road, Colombo"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
                                         value={newSlot.location}
                                         onChange={e => setNewSlot({ ...newSlot, location: e.target.value })}
                                     />
@@ -509,7 +655,7 @@ export default function LawyerDashboard() {
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Appointment Type</label>
                                     <select
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#FF9000] outline-none transition appearance-none"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition appearance-none"
                                         value={newSlot.type}
                                         onChange={e => setNewSlot({ ...newSlot, type: e.target.value })}
                                     >
@@ -539,6 +685,103 @@ export default function LawyerDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Detail Modal */}
+            {isDetailModalOpen && selectedApt && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                                    <Info className="w-5 h-5 text-[#FF9000]" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold">Appointment Details</h2>
+                                    <p className="text-xs text-slate-400 font-medium tracking-tight uppercase">Reference ID: {selectedApt.id.slice(-8)}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsDetailModalOpen(false)} className="p-1.5 hover:bg-white/10 rounded-lg transition">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-8">
+                            {/* Client Header */}
+                            <div className="flex items-start justify-between mb-8">
+                                <div className="flex items-center gap-5">
+                                    <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center shadow-sm">
+                                        <User className="w-8 h-8 text-slate-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-black text-[#181B25] tracking-tight">{selectedApt.clientName}</h3>
+                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mt-1 border ${getStatusColor(selectedApt.status || (selectedApt.isBooked ? 'Confirmed' : 'Available'))}`}>
+                                            {selectedApt.status || (selectedApt.isBooked ? 'Confirmed' : 'Available')}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-8 py-6 border-y border-slate-100">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                            <CalendarIcon className="w-4 h-4 text-slate-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</p>
+                                            <p className="text-sm font-bold text-[#181B25]">{selectedApt.date}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                            <Clock className="w-4 h-4 text-slate-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</p>
+                                            <p className="text-sm font-bold text-[#181B25]">{selectedApt.time}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                            <MapPin className="w-4 h-4 text-slate-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location</p>
+                                            <p className="text-sm font-bold text-[#181B25]">{selectedApt.location}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center">
+                                            <FileText className="w-4 h-4 text-slate-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</p>
+                                            <p className="text-sm font-bold text-[#181B25]">{selectedApt.type}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 flex gap-3">
+                                {(selectedApt.status === 'Pending' || (!selectedApt.status && selectedApt.isBooked)) && (
+                                    <>
+                                        <button onClick={() => handleUpdateStatus(selectedApt.id, 'Confirmed')} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition">Confirm Appointment</button>
+                                        <button onClick={() => handleUpdateStatus(selectedApt.id, 'Canceled')} className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-sm transition border border-rose-100">Cancel</button>
+                                    </>
+                                )}
+                                {selectedApt.status === 'Confirmed' && (
+                                    <button onClick={() => handleUpdateStatus(selectedApt.id, 'Completed')} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition">Mark as Completed</button>
+                                )}
+                                {!selectedApt.isBooked && (
+                                    <button onClick={() => handleDeleteSlot(selectedApt.id)} className="w-full py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-sm transition border border-rose-100">Remove from Schedule</button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
+

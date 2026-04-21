@@ -8,6 +8,7 @@ export async function GET(req: Request) {
     const lawyerId = searchParams.get("lawyerId");
     const type = searchParams.get("type") || "stats";
     const status = searchParams.get("status") || "all";
+    const period = searchParams.get("period") || "this-month";
 
     if (!lawyerId) {
         return new Response(JSON.stringify({ message: "lawyerId is required" }), { status: 400 });
@@ -18,11 +19,21 @@ export async function GET(req: Request) {
 
         if (type === "appointments") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/appointments`;
         if (type === "all-appointments") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/all-appointments?status=${status}`;
+        if (type === "bookings") {
+            const clientEmail = searchParams.get("clientEmail");
+            endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/bookings${clientEmail ? `?client_email=${encodeURIComponent(clientEmail)}` : ""}`;
+        }
         if (type === "clients") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/clients`;
         if (type === "documents") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/documents`;
         if (type === "slot") {
             const slotId = searchParams.get("slotId");
             endpoint = `${API_BASE_URL}/lawyer-dashboard/slot/${slotId}`;
+        }
+        if (type === "analytics") {
+            endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/bookings?type=analytics&period=${period}`;
+        }
+        if (type === "stats") {
+            endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/bookings?type=stats`;
         }
         // Add more types as needed
 

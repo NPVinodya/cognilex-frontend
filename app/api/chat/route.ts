@@ -1,11 +1,17 @@
 export const runtime = 'nodejs';
 
+import { isAuthenticatedFromRequest } from '@/proxy';
+
 const CHAT_BASE_URL =
   process.env.CHAT_API_URL ??
   'https://unbonneted-stratagemical-hal.ngrok-free.dev';
 
 export async function POST(req: Request) {
   try {
+    if (!isAuthenticatedFromRequest(req)) {
+      return Response.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const question = typeof body.question === 'string' ? body.question.trim() : '';
 

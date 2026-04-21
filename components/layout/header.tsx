@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import { Scale, LogIn, UserPlus, LogOut, Home, Info, Briefcase, Users, Mail, Menu, X, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { logoutFromAppwrite } from '@/lib/appwrite';
 
 export default function Header() {
   const router = useRouter();
@@ -12,19 +13,47 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ name: string } | null>(null);
+  const [user, setUser] = useState<{ name?: string } | null>(null);
 
-  const logout = () => {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncFromStorage = () => {
+      const rawUser = localStorage.getItem("user");
+      const authed = localStorage.getItem("isAuthenticated") === "true";
+
+      setIsAuthenticated(authed);
+      setUser(rawUser ? (JSON.parse(rawUser) as { name?: string }) : null);
+    };
+
+    syncFromStorage();
+    window.addEventListener("storage", syncFromStorage);
+    return () => window.removeEventListener("storage", syncFromStorage);
+  }, []);
+
+  const logout = async () => {
     setIsAuthenticated(false);
     setUser(null);
 
     if (typeof window !== "undefined") {
+      try {
+        await logoutFromAppwrite();
+      } catch {
+        // Ignore; client-side session might already be cleared.
+      }
+
+      try {
+        await fetch("/api/logout", { method: "POST" });
+      } catch {
+        // Ignore; we still clear client storage below.
+      }
+
       localStorage.removeItem("user");
       localStorage.removeItem("isAuthenticated");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("tokenType");
 
-      // Crucial: Clear cookies so the middleware proxy knows you are logged out
+      // Clear non-HttpOnly cookies (HttpOnly cookies are cleared via /api/logout)
       document.cookie = "isAuthenticated=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }

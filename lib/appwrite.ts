@@ -1,4 +1,4 @@
-import { Account, Client, ID, OAuthProvider } from 'appwrite';
+import { Account, Client, ID, OAuthProvider, Models } from 'appwrite';
 
 const client = new Client()
   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
@@ -53,9 +53,44 @@ export async function loginWithAppwrite(email: string, password: string) {
 }
 
 export async function loginWithGoogleAppwrite() {
-  const successUrl = `${window.location.origin}/chat?provider=oauth`;
-  const failureUrl = `${window.location.origin}/login`;
-  return account.createOAuth2Session(OAuthProvider.Google, successUrl, failureUrl);
+  try {
+    await clearActiveAppwriteSession();
+    const successUrl = `${window.location.origin}/auth/oauth-callback`;
+    const failureUrl = `${window.location.origin}/login?error=google_auth_failed`;
+    return account.createOAuth2Session(OAuthProvider.Google, successUrl, failureUrl);
+  } catch (error) {
+    console.error('Google OAuth error:', error);
+    throw new Error('Failed to initiate Google authentication. Please try again.');
+  }
+}
+
+export async function loginWithMicrosoftAppwrite() {
+  try {
+    await clearActiveAppwriteSession();
+    const successUrl = `${window.location.origin}/auth/oauth-callback`;
+    const failureUrl = `${window.location.origin}/login?error=microsoft_auth_failed`;
+    return account.createOAuth2Session(OAuthProvider.Microsoft, successUrl, failureUrl);
+  } catch (error) {
+    console.error('Microsoft OAuth error:', error);
+    throw new Error('Failed to initiate Microsoft authentication. Please try again.');
+  }
+}
+
+export async function handleOAuthCallback() {
+  try {
+    const user = await account.get();
+
+    // Appwrite typings may include a string union in some contexts.
+    // Ensure downstream code always receives a full user object.
+    if (typeof user === 'string') {
+      throw new Error('Invalid OAuth user payload returned from Appwrite.');
+    }
+
+    return user as Models.User<Models.Preferences>;
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    throw new Error('Authentication failed. Please try logging in again.');
+  }
 }
 
 export async function logoutFromAppwrite() {
