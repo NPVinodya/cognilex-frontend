@@ -1,11 +1,12 @@
 export const runtime = "nodejs";
 
 import axios from "axios";
+import { API_BASE_URL } from "@/lib/constants";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const lawyerId = searchParams.get("lawyerId");
-    const type = searchParams.get("type") || "stats"; 
+    const type = searchParams.get("type") || "stats";
     const status = searchParams.get("status") || "all";
 
     if (!lawyerId) {
@@ -13,13 +14,16 @@ export async function GET(req: Request) {
     }
 
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        let endpoint = `${baseUrl}/lawyer-dashboard/${lawyerId}/stats`;
+        let endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/stats`;
 
-        if (type === "appointments") endpoint = `${baseUrl}/lawyer-dashboard/${lawyerId}/appointments`;
-        if (type === "all-appointments") endpoint = `${baseUrl}/lawyer-dashboard/${lawyerId}/all-appointments?status=${status}`;
-        if (type === "clients") endpoint = `${baseUrl}/lawyer-dashboard/${lawyerId}/clients`;
-        if (type === "documents") endpoint = `${baseUrl}/lawyer-dashboard/${lawyerId}/documents`;
+        if (type === "appointments") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/appointments`;
+        if (type === "all-appointments") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/all-appointments?status=${status}`;
+        if (type === "clients") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/clients`;
+        if (type === "documents") endpoint = `${API_BASE_URL}/lawyer-dashboard/${lawyerId}/documents`;
+        if (type === "slot") {
+            const slotId = searchParams.get("slotId");
+            endpoint = `${API_BASE_URL}/lawyer-dashboard/slot/${slotId}`;
+        }
         // Add more types as needed
 
         const response = await axios.get(endpoint, {
@@ -48,8 +52,7 @@ export async function PATCH(req: Request) {
             return new Response(JSON.stringify({ message: "appointmentId and status are required" }), { status: 400 });
         }
 
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await axios.patch(`${baseUrl}/lawyer-dashboard/appointment/${appointmentId}/status?new_status=${status}`, {}, {
+        const response = await axios.patch(`${API_BASE_URL}/lawyer-dashboard/appointment/${appointmentId}/status?new_status=${status}`, {}, {
             headers: { "ngrok-skip-browser-warning": "69420" }
         });
 
@@ -70,15 +73,14 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { lawyerId, date, time, type, location } = body;
-        
+
         console.log('Proxy POST slot:', { lawyerId, date, time, type, location });
 
         if (!lawyerId || !date || !time) {
             return new Response(JSON.stringify({ message: "Required fields missing" }), { status: 400 });
         }
 
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await axios.post(`${baseUrl}/lawyer-dashboard/slot`, {}, {
+        const response = await axios.post(`${API_BASE_URL}/lawyer-dashboard/slot`, {}, {
             params: {
                 lawyer_id: lawyerId,
                 date: date,
@@ -111,8 +113,7 @@ export async function DELETE(req: Request) {
     if (!slotId) return new Response(JSON.stringify({ message: "slotId is required" }), { status: 400 });
 
     try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const response = await axios.delete(`${baseUrl}/lawyer-dashboard/slot/${slotId}`, {
+        const response = await axios.delete(`${API_BASE_URL}/lawyer-dashboard/slot/${slotId}`, {
             headers: { "ngrok-skip-browser-warning": "69420" }
         });
         return new Response(JSON.stringify(response.data), { status: 200 });

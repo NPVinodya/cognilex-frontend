@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
 import { LogIn, Eye, EyeOff, AlertCircle, Scale, Gavel, Shield, BookOpen, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { loginWithAppwrite, loginWithGoogleAppwrite, account } from '@/lib/appwrite';
+import { API_BASE_URL } from '@/lib/constants';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,11 +14,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  type LoginResponse = {
-    message: string;
-    user: { id: string; email: string; name: string; created_at: string; };
-    access_token: string;
-    token_type: string;
+  const setAuthCookie = (name: string, value: string) => {
+    const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=604800; SameSite=Lax${secure}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,31 +25,64 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await axios.post<LoginResponse>('http://127.0.0.1:8000/login', {
-        email: formData.email,
-        password: formData.password,
-      });
+      await loginWithAppwrite(formData.email, formData.password);
 
-      const { user, access_token, token_type } = response.data;
-      localStorage.setItem('user', JSON.stringify(user));
+      const appwriteUser = await account.get();
+
+      let mongoUser: any = null;
+      try {
+        const response = await fetch(`${API_BASE_URL}/user/${encodeURIComponent(appwriteUser.email)}`);
+        if (response.ok) {
+          mongoUser = await response.json();
+        }
+      } catch {
+        // Continue with Appwrite user data if MongoDB user fetch fails.
+      }
+
+      const mergedUser = {
+        ...appwriteUser,
+        ...mongoUser,
+        role: mongoUser?.role || 'user',
+        userrole: (mongoUser?.role || 'user').toLowerCase(),
+      };
+
+      localStorage.setItem('user', JSON.stringify(mergedUser));
       localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('accessToken', access_token);
-      localStorage.setItem('tokenType', token_type);
 
-      // VERY IMPORTANT: Set cookies so proxy.ts middleware knows we are authenticated!
-      document.cookie = `isAuthenticated=true; path=/; max-age=604800`;
-      document.cookie = `accessToken=${access_token}; path=/; max-age=604800`;
+      try {
+        const jwt = await account.createJWT();
+        localStorage.setItem('accessToken', jwt.jwt);
+        localStorage.setItem('tokenType', 'Bearer');
+        setAuthCookie('isAuthenticated', 'true');
+        setAuthCookie('accessToken', jwt.jwt);
+      } catch {
+        // If JWT creation fails, still proceed with basic login state
+      }
 
       router.push('/chat');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please try again.');
+      const message = err?.message || 'Login failed. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: 'google' | 'microsoft') => {
-    setError(`${provider} sign-in will be implemented soon`);
+  const handleSocialLogin = async (provider: 'google' | 'microsoft') => {
+    setError('');
+
+    if (provider === 'google') {
+      try {
+        await loginWithGoogleAppwrite();
+        return;
+      } catch (err: any) {
+        const message = err?.message || 'Google sign-in failed. Please try again.';
+        setError(message);
+        return;
+      }
+    }
+
+    setError('microsoft sign-in will be implemented soon');
   };
 
   return (
@@ -62,7 +94,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
 
           <div className="relative z-10">
-            <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-10 transition group text-sm font-semibold">
+            <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-10 transition group text-sm font-semibold cursor-pointer">
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
               Back to Home
             </Link>
@@ -103,7 +135,7 @@ export default function LoginPage() {
 
         {/* Right Side - Login Form */}
         <div className="w-full md:w-7/12 p-8 md:p-12 relative flex flex-col justify-center">
-          <Link href="/" className="md:hidden inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition group text-sm font-semibold">
+          <Link href="/" className="md:hidden inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition group text-sm font-semibold cursor-pointer">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
           </Link>
 
@@ -135,7 +167,7 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-bold text-slate-700">Password</label>
-                <Link href="/forgot-password" className="text-sm text-amber-600 hover:text-amber-700 font-bold transition">
+                <Link href="/forgot-password" className="text-sm text-amber-600 hover:text-amber-700 font-bold transition cursor-pointer">
                   Forgot?
                 </Link>
               </div>
@@ -151,7 +183,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -168,7 +200,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 bg-slate-900 text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-slate-800 hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+              className="w-full mt-2 bg-slate-900 text-white rounded-xl py-3.5 font-bold shadow-md hover:bg-slate-800 hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
@@ -189,7 +221,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
-                className="flex items-center justify-center gap-2 py-3 bg-white border border-slate-300 shadow-sm rounded-xl hover:bg-slate-50 transition"
+                className="flex items-center justify-center gap-2 py-3 bg-white border border-slate-300 shadow-sm rounded-xl hover:bg-slate-50 transition cursor-pointer"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -202,7 +234,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleSocialLogin('microsoft')}
-                className="flex items-center justify-center gap-2 py-3 bg-white border border-slate-300 shadow-sm rounded-xl hover:bg-slate-50 transition"
+                className="flex items-center justify-center gap-2 py-3 bg-white border border-slate-300 shadow-sm rounded-xl hover:bg-slate-50 transition cursor-pointer"
               >
                 <svg className="w-5 h-5" viewBox="0 0 23 23">
                   <path fill="#f35325" d="M1 1h10v10H1z" />
@@ -218,7 +250,7 @@ export default function LoginPage() {
           <div className="mt-8 text-center text-sm">
             <p className="text-slate-600">
               Don't have an account?{' '}
-              <Link href="/register" className="text-amber-600 hover:text-amber-700 font-bold transition">
+              <Link href="/register" className="text-amber-600 hover:text-amber-700 font-bold transition cursor-pointer">
                 Create Account
               </Link>
             </p>
@@ -226,11 +258,11 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-400">
               By signing in, you agree to our{' '}
-              <Link href="/terms" className="text-amber-600 hover:underline">
+              <Link href="/terms" className="text-amber-600 hover:underline cursor-pointer">
                 Terms
               </Link>{' '}
               and{' '}
-              <Link href="/privacy" className="text-amber-600 hover:underline">
+              <Link href="/privacy" className="text-amber-600 hover:underline cursor-pointer">
                 Privacy Policy
               </Link>
             </p>

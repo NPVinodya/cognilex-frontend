@@ -1,6 +1,7 @@
 export const runtime = "nodejs";
 
 import axios from "axios";
+import { API_BASE_URL } from "@/lib/constants";
 
 export async function POST(req: Request) {
     try {
@@ -12,14 +13,12 @@ export async function POST(req: Request) {
             return new Response(JSON.stringify({ message: "Email and file are required" }), { status: 400 });
         }
 
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        
         // Forward the multipart form data to the Python backend
         const backendFormData = new FormData();
         backendFormData.append("file", file);
 
         const response = await axios.post(
-            `${baseUrl}/avatar/upload?email=${encodeURIComponent(email)}`,
+            `${API_BASE_URL}/avatar/upload?email=${encodeURIComponent(email)}`,
             backendFormData,
             {
                 headers: {
