@@ -59,23 +59,7 @@ export default function LawyerRegistrationPage() {
   const [lawyerIdPreview, setLawyerIdPreview] = useState<string>('');
   const [currentUserEmail, setCurrentUserEmail] = useState('');
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
 
-    try {
-      const stored = localStorage.getItem('user');
-      const parsed = stored ? JSON.parse(stored) : null;
-      const appearance = parsed?.preferences?.appearance || 'Dark Mode';
-
-      if (appearance === 'Dark Mode' || appearance === 'System Default') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } catch {
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
