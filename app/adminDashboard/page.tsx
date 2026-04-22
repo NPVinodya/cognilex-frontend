@@ -1,5 +1,7 @@
-import AdminDashboard from "@/legacy_pages/adminDashboard/admin_Dashboard";
-function AdminDashboardPage() {
-    return <AdminDashboard />;
+'use client';
+
+import AdminOverview from "@/legacy_pages/adminDashboard/overview";
+
+export default function AdminDashboardPage() {
+    return <AdminOverview />;
 }
-export default AdminDashboardPage;
