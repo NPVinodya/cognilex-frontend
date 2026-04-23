@@ -56,12 +56,10 @@ export default function AdminApprovals() {
 
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500 text-left">
-      <div className="flex items-center justify-between mb-10 pb-4 border-b border-slate-200">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-4 text-left">
-             Authorizations Queue
-          </h1>
-          <p className="text-slate-500 text-sm font-bold mt-1 text-left">Review and verify new professional registrations</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight">Authorizations Queue</h1>
+          <p className="text-base text-slate-500 dark:text-slate-400 font-medium">Review and verify new professional registrations</p>
         </div>
         <div className="px-6 py-3 bg-orange-50 border border-orange-100 text-[#FF9000] rounded-2xl text-xs font-black uppercase tracking-[0.15em] shadow-sm">
           {lawyerApprovals.length} Pending Requests

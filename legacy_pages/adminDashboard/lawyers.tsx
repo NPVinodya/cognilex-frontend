@@ -45,10 +45,10 @@ export default function AdminLawyers() {
 
     return (
         <div className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Verified Professionals</h1>
-                    <p className="text-slate-500 text-sm font-bold mt-1">Directory of legally authorized practitioners</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-4">
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-3xl font-bold tracking-tight">Verified Professionals</h1>
+                    <p className="text-base text-slate-500 dark:text-slate-400 font-medium">Directory of legally authorized practitioners</p>
                 </div>
                 <div className="relative w-full md:w-auto">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />

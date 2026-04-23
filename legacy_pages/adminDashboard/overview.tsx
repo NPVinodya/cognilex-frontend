@@ -90,10 +90,10 @@ export default function AdminOverview() {
 
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500 pb-20 text-left">
-      <div className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">System Overview</h1>
-          <p className="text-slate-500 text-sm font-bold mt-1">Complete platform status & metrics</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight">System Overview</h1>
+          <p className="text-base text-slate-500 dark:text-slate-400 font-medium">Complete platform status & metrics</p>
         </div>
         <div>
           <button onClick={fetchData} className="px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all font-bold flex items-center gap-2 shadow-xl shadow-slate-900/20 active:scale-95">

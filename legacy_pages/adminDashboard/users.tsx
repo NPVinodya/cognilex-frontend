@@ -64,10 +64,10 @@ export default function AdminUsers() {
 
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500 text-left">
-      <div className="mb-10 flex items-center justify-between">
-        <div className="text-left">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">User Management</h1>
-          <p className="text-slate-500 text-sm font-bold mt-1 text-left">Monitor and manage platform participants</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 px-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+          <p className="text-base text-slate-500 dark:text-slate-400 font-medium">Monitor and manage platform participants</p>
         </div>
         <div className="bg-white px-6 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>

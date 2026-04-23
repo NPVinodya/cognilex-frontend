@@ -119,12 +119,10 @@ export default function AdminManagement() {
 
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500 text-left pb-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
-        <div className="text-left">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-             Admin Management
-          </h1>
-          <p className="text-slate-500 text-sm font-bold mt-1 text-left">Control and audit platform administrative access</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight">Admin Management</h1>
+          <p className="text-base text-slate-500 dark:text-slate-400 font-medium">Control and audit platform administrative access</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
