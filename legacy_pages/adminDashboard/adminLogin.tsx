@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { LogIn, Eye, EyeOff, AlertCircle, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle, ShieldCheck, ArrowLeft, Scale } from 'lucide-react';
 import Link from 'next/link';
 import { saveAdminSession, type AdminLoginResponse } from '@/lib/adminSession';
 
@@ -51,8 +51,8 @@ export default function AdminLoginPage() {
                         </Link>
 
                         <div className="flex items-center gap-3 mb-8">
-                            <div className="bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-md">
-                                <ShieldCheck className="w-8 h-8 text-blue-500" />
+                            <div className="bg-white p-3 rounded-2xl shadow-xl">
+                                <Scale className="w-8 h-8 text-[#FF9000]" />
                             </div>
                             <h1 className="text-3xl font-extrabold text-white tracking-tight">Admin</h1>
                         </div>
@@ -75,8 +75,8 @@ export default function AdminLoginPage() {
                     </Link>
 
                     <div className="md:hidden flex items-center gap-3 mb-8">
-                        <div className="bg-slate-100 border border-slate-200 p-2 rounded-lg shadow-sm">
-                            <ShieldCheck className="w-6 h-6 text-blue-600" />
+                        <div className="bg-white border border-slate-100 p-3 rounded-2xl shadow-lg">
+                            <Scale className="w-8 h-8 text-[#FF9000]" />
                         </div>
                         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Admin Portal</h1>
                     </div>
