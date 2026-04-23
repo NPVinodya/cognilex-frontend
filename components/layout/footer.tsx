@@ -2,9 +2,24 @@
 
 import { useRouter } from 'next/navigation';
 import { Scale, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, Youtube, ArrowRight, Heart } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export default function Footer() {
   const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkAuth = () => {
+      const authed = localStorage.getItem("isAuthenticated") === "true";
+      setIsAuthenticated(authed);
+    };
+
+    checkAuth();
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
+  }, []);
 
   const quickLinks = [
     { name: 'Home', path: '/' },
@@ -67,17 +82,17 @@ export default function Footer() {
                 </div>
                 <span className="text-sm">+94 11 234 5678</span>
               </a>
-              <a href="mailto:info@cognilex.lk" className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors group">
+              <a href="mailto:vino@cognilex.com" className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors group">
                 <div className="bg-white/10 p-2 rounded-lg group-hover:bg-white/20 transition-all">
                   <Mail className="w-4 h-4" />
                 </div>
-                <span className="text-sm">info@cognilex.lk</span>
+                <span className="text-sm">vino@cognilex.com</span>
               </a>
               <div className="flex items-start space-x-3 text-gray-300">
                 <div className="bg-white/10 p-2 rounded-lg">
                   <MapPin className="w-4 h-4" />
                 </div>
-                <span className="text-sm">Colombo 03, Sri Lanka</span>
+                <span className="text-sm">CogniLex, Sri Lanka</span>
               </div>
             </div>
           </div>
@@ -150,7 +165,13 @@ export default function Footer() {
                 {legalLinks.map((link) => (
                   <li key={link.name}>
                     <button
-                      onClick={() => router.push(link.path)}
+                      onClick={() => {
+                        if (link.name === 'Lawyer Registration' && !isAuthenticated) {
+                          router.push('/login');
+                        } else {
+                          router.push(link.path);
+                        }
+                      }}
                       className="text-sm text-gray-400 hover:text-white transition-colors"
                     >
                       {link.name}

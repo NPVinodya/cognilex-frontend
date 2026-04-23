@@ -104,7 +104,7 @@ function CheckoutContent() {
         merchant_id: process.env.NEXT_PUBLIC_PAYHERE_MERCHANT_ID || "1211149",
         return_url: window.location.origin + "/checkout",
         cancel_url: window.location.origin + "/checkout",
-        notify_url: window.location.origin + "/api/payment/payhere-notify", 
+        notify_url: window.location.origin + "/api/payment/payhere-notify",
         order_id: slotId,
         items: `Legal Consultation: ${lawyer.fullName}`,
         amount: amount.toFixed(2),
@@ -122,7 +122,7 @@ function CheckoutContent() {
 
       (window as any).payhere.onCompleted = async function onCompleted(orderId: string) {
         console.log("PayHere Payment Completed for Order ID:", orderId);
-        
+
         // Finalize the booking immediately in the backend
         try {
           const finalizeRes = await fetch('/api/lawyer/dashboard', {
@@ -365,22 +365,22 @@ function CheckoutContent() {
                   {/* Premium Atmospheric Glow Background - Lightened */}
                   <div className="absolute inset-0 z-0">
                     <div className="absolute inset-0 bg-white/85 backdrop-blur-xl z-10"></div>
-                    <img 
-                      src="/payment-bg.png" 
-                      alt="" 
+                    <img
+                      src="/payment-bg.png"
+                      alt=""
                       className="w-full h-full object-cover opacity-35 blur-3xl scale-125"
                     />
                   </div>
-                  
+
                   <div className="p-8 md:p-12 relative z-10 flex flex-col items-center text-center">
                     <div className="w-16 h-16 bg-amber-600/10 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
                       <ShieldCheck size={32} className="text-amber-600" />
                     </div>
-                    
+
                     <h2 className="text-2xl font-black text-slate-900 mb-2 font-outfit uppercase tracking-tight">Secure Checkout</h2>
                     <p className="text-slate-500 text-[13px] max-w-sm mb-4 leading-relaxed font-inter">
-                      Pay securely via <span className="text-slate-900 font-bold">Credit/Debit Cards</span>, 
-                      <span className="text-slate-900 font-bold ml-1">Mobile Wallets</span> (Frimi, Genie, iPay), 
+                      Pay securely via <span className="text-slate-900 font-bold">Credit/Debit Cards</span>,
+                      <span className="text-slate-900 font-bold ml-1">Mobile Wallets</span> (Frimi, Genie, iPay),
                       or <span className="text-slate-900 font-bold ml-1">Internet Banking</span>.
                     </p>
 
@@ -427,57 +427,57 @@ function CheckoutContent() {
                     </div>
 
                     <div className="w-full space-y-6">
-                      <button 
-                        onClick={handlePayHerePayment} 
-                        disabled={isProcessing} 
+                      <button
+                        onClick={handlePayHerePayment}
+                        disabled={isProcessing}
                         className="group relative w-full h-[50px] bg-[#121212] hover:bg-black text-white rounded-full font-semibold border border-amber-500/30 hover:border-amber-500 shadow-[0_0_20px_rgba(0,0,0,0.1)] hover:shadow-[0_0_25px_rgba(245,158,11,0.15)] transition-all active:scale-[0.98] disabled:opacity-70 font-inter text-[15.5px] flex items-center justify-center overflow-hidden"
                       >
-                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                         {isProcessing ? (
-                           <><Loader2 className="w-5 h-5 animate-spin" /><span className="animate-pulse tracking-wide">Securing connection...</span></>
-                         ) : (
-                           <span className="tracking-tight">Confirm & Pay LKR {totalAmount.toLocaleString()}</span>
-                         )}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                        {isProcessing ? (
+                          <><Loader2 className="w-5 h-5 animate-spin" /><span className="animate-pulse tracking-wide">Securing connection...</span></>
+                        ) : (
+                          <span className="tracking-tight">Confirm & Pay LKR {totalAmount.toLocaleString()}</span>
+                        )}
                       </button>
 
                       {/* Trust Icons Grid — Matching the Image */}
                       <div className="flex flex-wrap justify-center items-center gap-8 pt-12 px-4">
                         {/* VISA - Robust Icon */}
                         <div className="flex items-center gap-1.5 opacity-90 transition-all hover:scale-110">
-                           <div className="w-11 h-7 bg-[#1A1F71] rounded-sm flex items-center justify-center p-1 shadow-sm">
-                             <span className="text-white text-[10px] font-black italic tracking-tighter">VISA</span>
-                           </div>
-                           <div className="w-2.5 h-1.5 bg-[#F7B600] rounded-tr-[50%] rounded-bl-[50%] -ml-1"></div>
+                          <div className="w-11 h-7 bg-[#1A1F71] rounded-sm flex items-center justify-center p-1 shadow-sm">
+                            <span className="text-white text-[10px] font-black italic tracking-tighter">VISA</span>
+                          </div>
+                          <div className="w-2.5 h-1.5 bg-[#F7B600] rounded-tr-[50%] rounded-bl-[50%] -ml-1"></div>
                         </div>
 
                         {/* Mastercard */}
                         <div className="flex flex-col items-center gap-0.5 opacity-100 transition-all hover:scale-110">
-                           <div className="flex -space-x-1.5">
-                             <div className="w-5 h-5 rounded-full bg-[#EB001B]"></div>
-                             <div className="w-5 h-5 rounded-full bg-[#F79E1B]/90"></div>
-                           </div>
-                           <span className="text-[7px] font-bold text-slate-400 font-inter uppercase">mastercard</span>
+                          <div className="flex -space-x-1.5">
+                            <div className="w-5 h-5 rounded-full bg-[#EB001B]"></div>
+                            <div className="w-5 h-5 rounded-full bg-[#F79E1B]/90"></div>
+                          </div>
+                          <span className="text-[7px] font-bold text-slate-400 font-inter uppercase">mastercard</span>
                         </div>
 
                         {/* PCI DSS */}
                         <div className="flex items-center gap-1.5 opacity-90">
-                           <div className="h-6 px-2.5 bg-slate-100/50 border border-slate-200 rounded-md flex items-center gap-1">
-                             <span className="text-slate-800 font-black text-[9px] font-inter">PCI</span>
-                             <Check className="w-3 h-3 text-emerald-500 stroke-[4]" />
-                             <span className="text-slate-500 font-bold text-[8px] font-inter">DSS</span>
-                           </div>
+                          <div className="h-6 px-2.5 bg-slate-100/50 border border-slate-200 rounded-md flex items-center gap-1">
+                            <span className="text-slate-800 font-black text-[9px] font-inter">PCI</span>
+                            <Check className="w-3 h-3 text-emerald-500 stroke-[4]" />
+                            <span className="text-slate-500 font-bold text-[8px] font-inter">DSS</span>
+                          </div>
                         </div>
 
                         {/* Shields */}
                         <div className="flex items-center gap-4 border-l border-slate-200 pl-8 opacity-60">
-                           <ShieldCheck className="w-5 h-5 text-slate-500" />
-                           <div className="w-[1px] h-4 bg-slate-200"></div>
-                           <Lock className="w-5 h-5 text-slate-400" />
+                          <ShieldCheck className="w-5 h-5 text-slate-500" />
+                          <div className="w-[1px] h-4 bg-slate-200"></div>
+                          <Lock className="w-5 h-5 text-slate-400" />
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Subtle bottom info bar */}
                   <div className="bg-slate-50/80 backdrop-blur-sm px-8 py-3 flex items-center justify-center gap-2 border-t border-slate-100">
                     <Lock className="w-3 h-3 text-emerald-600" />
@@ -551,63 +551,63 @@ function CheckoutContent() {
           <div className="max-w-2xl mx-auto py-12 px-4 relative">
             {/* Celebratory Background Particles */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-               <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-amber-400 rounded-full animate-ping opacity-20"></div>
-               <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-emerald-400 rounded-full animate-bounce opacity-20 duration-1000"></div>
-               <div className="absolute bottom-1/4 left-1/2 w-2 h-2 bg-purple-400 rounded-full animate-pulse opacity-20"></div>
+              <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-amber-400 rounded-full animate-ping opacity-20"></div>
+              <div className="absolute top-1/3 right-1/4 w-3 h-3 bg-emerald-400 rounded-full animate-bounce opacity-20 duration-1000"></div>
+              <div className="absolute bottom-1/4 left-1/2 w-2 h-2 bg-purple-400 rounded-full animate-pulse opacity-20"></div>
             </div>
 
             <div className="bg-white/85 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-slate-200/60 overflow-hidden relative p-8 md:p-12 flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
-               {/* Underlay glow from Step 2 for continuity */}
-               <div className="absolute inset-0 z-0 opacity-20 blur-3xl scale-125">
-                 <img src="/payment-bg.png" alt="" className="w-full h-full object-cover" />
-               </div>
+              {/* Underlay glow from Step 2 for continuity */}
+              <div className="absolute inset-0 z-0 opacity-20 blur-3xl scale-125">
+                <img src="/payment-bg.png" alt="" className="w-full h-full object-cover" />
+              </div>
 
-               <div className="relative z-10 w-full flex flex-col items-center">
-                  <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-emerald-500/10">
-                    <CheckCircle className="w-10 h-10 text-emerald-500 animate-in spin-in-1 duration-700" />
+              <div className="relative z-10 w-full flex flex-col items-center">
+                <div className="w-20 h-20 bg-emerald-500/10 rounded-3xl flex items-center justify-center mb-8 shadow-inner border border-emerald-500/10">
+                  <CheckCircle className="w-10 h-10 text-emerald-500 animate-in spin-in-1 duration-700" />
+                </div>
+
+                <h2 className="text-3xl font-black text-slate-900 mb-3 font-outfit uppercase tracking-tight">Booking Confirmed!</h2>
+                <p className="text-slate-500 text-sm max-w-md mb-10 leading-relaxed font-inter">
+                  Your legal consultation with <span className="font-bold text-slate-900">{lawyer.fullName}</span> has been successfully scheduled. A confirmation has been sent to your email.
+                </p>
+
+                <div className="w-full bg-slate-50/50 rounded-3xl border border-slate-100 p-8 mb-10 space-y-4 text-left">
+                  <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center"><Calendar className="w-4 h-4 text-amber-600" /></div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</span>
+                    </div>
+                    <span className="font-bold text-slate-900 font-inter">{new Date(slot.date).toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                   </div>
-
-                  <h2 className="text-3xl font-black text-slate-900 mb-3 font-outfit uppercase tracking-tight">Booking Confirmed!</h2>
-                  <p className="text-slate-500 text-sm max-w-md mb-10 leading-relaxed font-inter">
-                    Your legal consultation with <span className="font-bold text-slate-900">{lawyer.fullName}</span> has been successfully scheduled. A confirmation has been sent to your email.
-                  </p>
-
-                  <div className="w-full bg-slate-50/50 rounded-3xl border border-slate-100 p-8 mb-10 space-y-4 text-left">
-                    <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                       <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center"><Calendar className="w-4 h-4 text-amber-600" /></div>
-                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</span>
-                       </div>
-                       <span className="font-bold text-slate-900 font-inter">{new Date(slot.date).toLocaleDateString('default', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center"><Clock className="w-4 h-4 text-amber-600" /></div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Time Slot</span>
                     </div>
-                    <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                       <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center"><Clock className="w-4 h-4 text-amber-600" /></div>
-                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Time Slot</span>
-                       </div>
-                       <span className="font-bold text-slate-900 font-inter">{slot.time}</span>
-                    </div>
-                    <div className="flex justify-between items-center pt-2">
-                       <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Transaction Status</span>
-                       <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1 rounded-full">
-                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                         <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Verified & Paid</span>
-                       </div>
+                    <span className="font-bold text-slate-900 font-inter">{slot.time}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Transaction Status</span>
+                    <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1 rounded-full">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">Verified & Paid</span>
                     </div>
                   </div>
+                </div>
 
-                  <button 
-                    onClick={() => router.push("/")} 
-                    className="group relative w-full h-[56px] bg-[#121212] hover:bg-black text-white rounded-full font-bold border border-amber-500/30 hover:border-amber-500 shadow-xl transition-all active:scale-[0.98] font-inter text-[16px] flex items-center justify-center overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                    GO TO DASHBOARD
-                  </button>
+                <button
+                  onClick={() => router.push("/")}
+                  className="group relative w-full h-[56px] bg-[#121212] hover:bg-black text-white rounded-full font-bold border border-amber-500/30 hover:border-amber-500 shadow-xl transition-all active:scale-[0.98] font-inter text-[16px] flex items-center justify-center overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  GO TO DASHBOARD
+                </button>
 
-                  <p className="mt-8 text-[11px] text-slate-400 font-medium flex items-center gap-2">
-                    <ShieldCheck className="w-3 h-3" /> Secure Transaction Recorded via PayHere
-                  </p>
-               </div>
+                <p className="mt-8 text-[11px] text-slate-400 font-medium flex items-center gap-2">
+                  <ShieldCheck className="w-3 h-3" /> Secure Transaction Recorded via PayHere
+                </p>
+              </div>
             </div>
           </div>
         )}

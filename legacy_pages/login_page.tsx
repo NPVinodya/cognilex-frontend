@@ -152,8 +152,8 @@ export default function LoginPage() {
             </Link>
 
             <div className="flex items-center gap-3 mb-8">
-              <div className="bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-md">
-                <Scale className="w-8 h-8 text-amber-500" />
+              <div className="bg-white p-2.5 rounded-[14px] shadow-md flex items-center justify-center">
+                <Scale className="w-8 h-8 text-[#FF9000]" strokeWidth={2.5} />
               </div>
               <h1 className="text-3xl font-extrabold text-white tracking-tight">CogniLex AI</h1>
             </div>
@@ -192,8 +192,8 @@ export default function LoginPage() {
           </Link>
 
           <div className="md:hidden flex items-center gap-3 mb-8">
-            <div className="bg-slate-100 border border-slate-200 p-2 rounded-lg shadow-sm">
-              <Scale className="w-6 h-6 text-amber-600" />
+            <div className="bg-white border border-slate-200 p-2 rounded-[12px] shadow-sm flex items-center justify-center">
+              <Scale className="w-6 h-6 text-[#FF9000]" strokeWidth={2.5} />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">CogniLex AI</h1>
           </div>

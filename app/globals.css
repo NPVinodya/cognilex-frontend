@@ -122,6 +122,18 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-inter), sans-serif; /* Default font for rest of site */
+  }
+
+  /* Admin Dashboard Specific Typography */
+  .admin-dashboard-root h1, 
+  .admin-dashboard-root h2, 
+  .admin-dashboard-root h3, 
+  .admin-dashboard-root h4 {
+    font-family: var(--font-outfit), sans-serif !important;
+    color: #000000 !important; /* Force Pure Black */
+  }
 }
 
 @layer utilities {
