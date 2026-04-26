@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Scale, Calendar as CalendarIcon, Users, Briefcase, FileText,
-  MessageSquare, TrendingUp, Settings, LayoutDashboard, Search, Bell
+  MessageSquare, TrendingUp, Settings, LayoutDashboard, Search, Bell, LogOut, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -67,8 +67,8 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
       <aside className="w-64 bg-[#181B25] text-slate-300 hidden lg:flex flex-col flex-shrink-0 shadow-xl overflow-hidden">
         <div className="h-20 flex items-center px-6 bg-[#181B25] z-10 shrink-0 border-b border-white/5">
           <Link href="/" className="flex items-center gap-3">
-            <div className="bg-[#FF9000] p-1.5 rounded-lg flex items-center justify-center">
-              <Scale className="h-5 w-5 text-white" strokeWidth={2.5} />
+            <div className="bg-white p-1.5 rounded-lg flex items-center justify-center shadow-sm">
+              <Scale className="h-5 w-5 text-[#FF9000]" strokeWidth={2.5} />
             </div>
             <span className="font-bold text-xl tracking-tight text-white">CogniLex AI</span>
           </Link>
@@ -104,7 +104,31 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
           </nav>
         </div>
 
-        <div className="p-4 mt-auto border-t border-white/5">
+        <div className="p-4 mt-auto border-t border-white/5 space-y-2">
+          {/* AI Chat Button */}
+          <Link 
+            href="/chat"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500/10 to-orange-600/5 text-[#FF9000] border border-orange-500/10 hover:border-orange-500/30 transition-all font-bold w-full active:scale-95 group mb-1 shadow-sm"
+          >
+            <Sparkles className="h-4 w-4 transition-transform group-hover:scale-110" />
+            <span className="text-sm tracking-tight text-[#FF9000]">CogniLex AI Chat</span>
+          </Link>
+
+          {/* Logout Button */}
+          <button 
+            onClick={() => {
+                if (confirm('Are you sure you want to log out?')) {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = '/login'; // Lawyer login is usually at /login
+                }
+            }}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-all font-bold w-full active:scale-95 group mb-2"
+          >
+            <LogOut className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+            <span className="text-sm">Logout</span>
+          </button>
+
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition">
             <img src={lawyerProfile.avatar} alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#2A2E3D]" />
             <div className="flex-1 min-w-0">

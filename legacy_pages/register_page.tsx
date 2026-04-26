@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Scale, ArrowLeft, UserPlus, AlertCircle, CheckCircle } from "lucide-react";
 import Link from 'next/link';
@@ -18,6 +18,17 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+
+    useEffect(() => {
+        const scriptId = 'dotlottie-player-script';
+        if (!document.getElementById(scriptId)) {
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.src = 'https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs';
+            script.type = 'module';
+            document.body.appendChild(script);
+        }
+    }, []);
 
     const setAuthCookie = (name: string, value: string) => {
         const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
@@ -189,21 +200,69 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-            <div className="max-w-md w-full relative pt-12">
-                <Link href="/" className="absolute top-0 left-0 inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 transition group text-sm font-semibold cursor-pointer">
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
-                </Link>
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <div className="max-w-5xl w-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+                
+                {/* Left Side - Lottie Animation & Branding */}
+                <div className="hidden md:flex md:w-5/12 bg-slate-900 p-12 flex-col justify-between text-white relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+                    
+                    <div className="relative z-10 flex flex-col h-full">
+                        <Link href="/" className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-10 transition group text-sm font-semibold cursor-pointer">
+                            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                            Back to Home
+                        </Link>
 
-                <div className="bg-white rounded-3xl shadow-xl border border-slate-200 p-8">
-                    <div className="flex flex-col items-center mb-8">
-                        <div className="bg-white border border-slate-200 p-3 rounded-2xl shadow-sm mb-4">
-                            <Scale className="w-8 h-8 text-[#FF9000]" />
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="bg-white p-2.5 rounded-[14px] shadow-md flex items-center justify-center">
+                                <Scale className="w-8 h-8 text-[#FF9000]" strokeWidth={2.5} />
+                            </div>
+                            <h1 className="text-3xl font-extrabold text-white tracking-tight">CogniLex AI</h1>
                         </div>
-                        <h2 className="text-3xl font-extrabold text-slate-900 text-center">
-                            Create Account
-                        </h2>
-                        <p className="text-center text-slate-500 font-medium mt-1">Join CogniLex AI Platform</p>
+
+                        <h2 className="text-3xl font-bold mb-4">Join Justice</h2>
+                        <p className="text-slate-400 leading-relaxed mb-8">
+                            Create your account to access Sri Lanka's most advanced legal AI platform.
+                        </p>
+
+                        <div 
+                            className="flex-1 flex items-center justify-center w-full my-auto"
+                            dangerouslySetInnerHTML={{
+                                __html: `
+                                    <dotlottie-player
+                                        src="https://assets-v2.lottiefiles.com/a/e39b4e4e-116f-11ee-ba48-375d0bd6b7d1/Lscnfmi3OM.lottie"
+                                        background="transparent"
+                                        speed="1"
+                                        style="width: 100%; max-width: 350px; aspect-ratio: 1/1;"
+                                        loop
+                                        autoplay
+                                    ></dotlottie-player>
+                                `
+                            }}
+                        />
+                    </div>
+
+                    <div className="relative z-10 mt-12 text-xs text-slate-500">
+                        &copy; {new Date().getFullYear()} CogniLex AI. All rights reserved.
+                    </div>
+                </div>
+
+                {/* Right Side - Register Form */}
+                <div className="w-full md:w-7/12 p-8 md:p-12 relative flex flex-col justify-center">
+                    <Link href="/" className="md:hidden inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition group text-sm font-semibold cursor-pointer">
+                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
+                    </Link>
+
+                    <div className="md:hidden flex items-center gap-3 mb-8">
+                        <div className="bg-white border border-slate-200 p-2 rounded-[12px] shadow-sm flex items-center justify-center">
+                            <Scale className="w-6 h-6 text-[#FF9000]" strokeWidth={2.5} />
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">CogniLex AI</h1>
+                    </div>
+
+                    <div className="mb-8">
+                        <h2 className="text-3xl font-bold text-slate-900 mb-2">Create Account</h2>
+                        <p className="text-slate-600">Join CogniLex AI Platform</p>
                     </div>
 
                     {error && (

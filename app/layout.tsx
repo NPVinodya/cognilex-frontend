@@ -61,7 +61,7 @@ export default function RootLayout({
   `;
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <Script id="theme-boot" strategy="beforeInteractive">
           {themeBootScript}

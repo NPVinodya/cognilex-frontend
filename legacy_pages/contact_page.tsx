@@ -1,11 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import {
   Mail, Phone, MapPin, Clock, Send, MessageSquare, User, FileText, CheckCircle, AlertCircle, Scale, Linkedin, Facebook, Twitter, Instagram
 } from 'lucide-react';
+
+const TomTomMap = dynamic(() => import('@/components/map/TomTomMap'), { 
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-slate-100 animate-pulse flex items-center justify-center text-slate-400">Loading Map...</div>
+});
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -14,11 +20,28 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
-    setTimeout(() => {
+    
+    try {
+      const response = await fetch('http://localhost:8000/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback');
+      }
+
       setStatus('success');
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
       setTimeout(() => setStatus('idle'), 5000);
-    }, 2000);
+    } catch (error) {
+      console.error('Feedback submission error:', error);
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 5000);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -27,8 +50,8 @@ export default function ContactPage() {
 
   const contactInfo = [
     { icon: Phone, title: 'Phone', details: ['+94 11 234 5678', '+94 77 123 4567'], action: 'Call us now' },
-    { icon: Mail, title: 'Email', details: ['support@cognilex.lk', 'info@cognilex.lk'], action: 'Send email' },
-    { icon: MapPin, title: 'Office', details: ['123 Legal Plaza, Colombo 03', 'Sri Lanka'], action: 'Get directions' },
+    { icon: Mail, title: 'Email', details: ['admin@123.com', 'vino@cognilex.com'], action: 'Send email' },
+    { icon: MapPin, title: 'Office', details: ['NSBM Green University', 'Mahenwaththa, Pitipana, Homagama'], action: 'Get directions' },
     { icon: Clock, title: 'Working Hours', details: ['Mon - Fri: 9:00 AM - 6:00 PM', 'Sat: 9:00 AM - 1:00 PM'], action: 'View schedule' }
   ];
 
@@ -121,12 +144,12 @@ export default function ContactPage() {
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Full Name *</label>
                       <input type="text" name="name" value={formData.name} onChange={handleChange} required
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition text-slate-900" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Email Address *</label>
                       <input type="email" name="email" value={formData.email} onChange={handleChange} required
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition text-slate-900" />
                     </div>
                   </div>
 
@@ -134,12 +157,12 @@ export default function ContactPage() {
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Phone Number</label>
                       <input type="tel" name="phone" value={formData.phone} onChange={handleChange}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition text-slate-900" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Subject *</label>
                       <select name="subject" value={formData.subject} onChange={handleChange} required
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition">
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition text-slate-900">
                         <option value="">Select a subject</option>
                         {subjects.map((sub, idx) => <option key={idx} value={sub}>{sub}</option>)}
                       </select>
@@ -149,7 +172,7 @@ export default function ContactPage() {
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">Message Content *</label>
                     <textarea name="message" value={formData.message} onChange={handleChange} required rows={6}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition resize-none"></textarea>
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition resize-none text-slate-900"></textarea>
                   </div>
 
                   <button type="submit" disabled={status === 'loading'}
@@ -214,16 +237,17 @@ export default function ContactPage() {
           <div className="mt-12 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="p-6 bg-slate-100 border-b border-slate-200">
               <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-amber-600" /> Headquarters Location
+                <MapPin className="w-5 h-5 text-amber-600" /> NSBM Green University
               </h3>
-              <p className="text-slate-600 mt-1">123 Legal Plaza, Colombo 03, Western Province</p>
+              <p className="text-slate-600 mt-1">Mahenwaththa, Pitipana, Homagama, Sri Lanka</p>
             </div>
-            <div className="h-96 bg-slate-200 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                <p className="text-slate-600 font-medium">Interactive Map Integration</p>
-                <p className="text-sm text-slate-500">Coordinates: 6.9271° N, 79.8612° E</p>
-              </div>
+            <div className="h-96 bg-slate-200">
+              <TomTomMap 
+                apiKey={process.env.NEXT_PUBLIC_TOMTOM_API_KEY || ''} 
+                lat={6.8209} 
+                lng={80.0397} 
+                language="en-US"
+              />
             </div>
           </div>
         </div>
