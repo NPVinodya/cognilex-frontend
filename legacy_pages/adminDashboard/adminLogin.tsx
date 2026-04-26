@@ -13,6 +13,7 @@ export default function AdminLoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const backendAPI = process.env.NEXT_PUBLIC_API_URL;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,7 +22,7 @@ export default function AdminLoginPage() {
 
         try {
             // Replace with your actual admin login endpoint
-            const response = await axios.post<AdminLoginResponse>('http://127.0.0.1:8000/admin/login', {
+            const response = await axios.post<AdminLoginResponse>(`${backendAPI}/admin/login`, {
                 email: formData.email,
                 password: formData.password,
             });

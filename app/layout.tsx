@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Outfit, Inter } from "next/font/google";
+import { Geist, Geist_Mono, Outfit, Inter, Roboto, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import React from "react";
 import "./globals.css";
@@ -22,6 +22,17 @@ const outfit = Outfit({
 
 const inter = Inter({
   variable: "--font-inter",
+  subsets: ["latin"],
+});
+
+const roboto = Roboto({
+  variable: "--font-roboto",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
 });
 
@@ -68,7 +79,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} ${inter.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} ${inter.variable} ${roboto.variable} ${playfair.variable} antialiased`}
       >
         <ThemeManager>
           {children}
