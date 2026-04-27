@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { 
-  User, Shield, Bell, Moon, Sun, Lock, Mail, Save, 
-  Settings as SettingsIcon, ShieldCheck, Key, Eye, EyeOff
+  User, Shield, Lock, Mail, Save, 
+  ShieldCheck, Key, Eye, EyeOff
 } from 'lucide-react';
 
 export default function AdminSettingsPage() {
@@ -218,7 +218,6 @@ export default function AdminSettingsPage() {
     { id: 'profile', name: 'Profile Settings', icon: User },
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'platform', name: 'Platform Settings', icon: ShieldCheck },
-    { id: 'system', name: 'System Prefs', icon: SettingsIcon },
   ];
 
   return (
@@ -459,62 +458,6 @@ export default function AdminSettingsPage() {
                   </button>
                 </div>
               </form>
-            )}
-
-            {activeTab === 'system' && (
-              <div className="p-8 md:p-12 space-y-10 animate-in slide-in-from-right duration-500">
-                <div className="space-y-6">
-                  <h3 className="text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Interface Preferences</h3>
-                  <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-700">
-                        <Moon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900">Dark Mode</p>
-                        <p className="text-xs text-slate-500 font-medium">Switch to a darker visual theme.</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={toggleDarkMode}
-                      className={`w-14 h-8 rounded-full relative transition-all p-1 flex items-center ${darkMode ? 'bg-indigo-600 justify-end' : 'bg-slate-200 justify-start'}`}
-                    >
-                      <div className="w-6 h-6 bg-white rounded-full shadow-md"></div>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-slate-700">
-                        <Bell className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900">Push Notifications</p>
-                        <p className="text-xs text-slate-500 font-medium">Receive real-time system alerts.</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={toggleNotifications}
-                      className={`w-14 h-8 rounded-full relative transition-all p-1 flex items-center ${pushNotifications ? 'bg-[#FF9000] justify-end' : 'bg-slate-200 justify-start'}`}
-                    >
-                      <div className="w-6 h-6 bg-white rounded-full shadow-md"></div>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-slate-900 dark:bg-slate-800 rounded-3xl text-white flex items-center justify-between">
-                   <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-[#FF9000]">
-                         <SettingsIcon className="w-6 h-6" />
-                      </div>
-                      <div>
-                         <p className="font-bold">Advanced System Access</p>
-                         <p className="text-xs text-slate-400">Manage low-level environment configurations.</p>
-                      </div>
-                   </div>
-                   <button className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition">Configure API</button>
-                </div>
-              </div>
             )}
           </div>
         </div>

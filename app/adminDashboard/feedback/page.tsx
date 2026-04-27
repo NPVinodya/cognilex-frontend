@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  MessageSquare, Mail, Phone, Calendar, Trash2, CheckCircle, 
+import {
+  MessageSquare, Mail, Phone, Calendar, Trash2, CheckCircle,
   Clock, Search, Filter, ExternalLink, ChevronRight, User
 } from 'lucide-react';
 
@@ -23,13 +23,15 @@ export default function FeedbackPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
   useEffect(() => {
     fetchFeedbacks();
   }, []);
 
   const fetchFeedbacks = async () => {
     try {
-      const response = await fetch('http://localhost:8000/admin/feedback');
+      const response = await fetch(`${API_URL}/admin/feedback`);
       const data = await response.json();
       if (data.feedbacks) {
         setFeedbacks(data.feedbacks);
@@ -72,7 +74,7 @@ export default function FeedbackPage() {
     }
   };
 
-  const filteredFeedbacks = feedbacks.filter(f => 
+  const filteredFeedbacks = feedbacks.filter(f =>
     f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     f.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     f.subject.toLowerCase().includes(searchTerm.toLowerCase())
@@ -90,9 +92,9 @@ export default function FeedbackPage() {
 
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search feedback..." 
+          <input
+            type="text"
+            placeholder="Search feedback..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-80 shadow-sm transition-all text-slate-900"
@@ -105,13 +107,13 @@ export default function FeedbackPage() {
         <div className="lg:col-span-2 space-y-4">
           {loading ? (
             <div className="bg-white p-20 rounded-3xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
-               <div className="w-12 h-12 border-4 border-[#FF9000] border-t-transparent rounded-full animate-spin"></div>
-               <p className="text-slate-500 mt-4 font-bold">Synchronizing Feedback...</p>
+              <div className="w-12 h-12 border-4 border-[#FF9000] border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-slate-500 mt-4 font-bold">Synchronizing Feedback...</p>
             </div>
           ) : filteredFeedbacks.length === 0 ? (
             <div className="bg-white p-20 rounded-3xl border border-dashed border-slate-300 text-center">
-               <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-               <p className="text-slate-400 font-bold text-xl">No inquiries found matching your criteria.</p>
+              <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+              <p className="text-slate-400 font-bold text-xl">No inquiries found matching your criteria.</p>
             </div>
           ) : (
             <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
@@ -127,8 +129,8 @@ export default function FeedbackPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {filteredFeedbacks.map((item) => (
-                      <tr 
-                        key={item.id} 
+                      <tr
+                        key={item.id}
                         className={`group hover:bg-slate-50/80 transition-colors cursor-pointer ${selectedFeedback?.id === item.id ? 'bg-orange-50/50' : ''}`}
                         onClick={() => setSelectedFeedback(item)}
                       >
@@ -148,18 +150,17 @@ export default function FeedbackPage() {
                           <p className="text-[11px] text-slate-400">{new Date(item.created_at).toLocaleDateString()}</p>
                         </td>
                         <td className="px-6 py-5">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            item.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                            item.status === 'read' ? 'bg-blue-100 text-blue-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${item.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                              item.status === 'read' ? 'bg-blue-100 text-blue-700' :
+                                'bg-green-100 text-green-700'
+                            }`}>
                             {item.status}
                           </span>
                         </td>
                         <td className="px-6 py-5 text-right">
-                           <button className="p-2 text-slate-300 group-hover:text-[#FF9000] transition-colors">
-                              <ChevronRight className="w-5 h-5" />
-                           </button>
+                          <button className="p-2 text-slate-300 group-hover:text-[#FF9000] transition-colors">
+                            <ChevronRight className="w-5 h-5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -174,77 +175,76 @@ export default function FeedbackPage() {
         <div className="lg:col-span-1">
           {selectedFeedback ? (
             <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl sticky top-8 animate-in slide-in-from-right duration-500">
-               <div className="flex items-center justify-between mb-8">
-                  <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    selectedFeedback.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+              <div className="flex items-center justify-between mb-8">
+                <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${selectedFeedback.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                     selectedFeedback.status === 'read' ? 'bg-blue-100 text-blue-700' :
-                    'bg-green-100 text-green-700'
+                      'bg-green-100 text-green-700'
                   }`}>
-                    {selectedFeedback.status}
-                  </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); deleteFeedback(selectedFeedback.id); }}
-                    className="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-               </div>
+                  {selectedFeedback.status}
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteFeedback(selectedFeedback.id); }}
+                  className="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
 
-               <h2 className="text-2xl font-black text-slate-900 mb-6">{selectedFeedback.subject}</h2>
-               
-               <div className="space-y-6 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <User className="w-4 h-4 text-slate-500" />
-                    <p className="text-sm font-bold text-slate-700">{selectedFeedback.name}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-slate-400" />
-                    <p className="text-sm text-slate-500 font-medium">{selectedFeedback.email}</p>
-                  </div>
-                  {selectedFeedback.phone && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-slate-400" />
-                      <p className="text-sm text-slate-500 font-medium">{selectedFeedback.phone}</p>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-slate-400" />
-                    <p className="text-sm text-slate-500 font-medium">
-                      {new Date(selectedFeedback.created_at).toLocaleString()}
-                    </p>
-                  </div>
-               </div>
+              <h2 className="text-2xl font-black text-slate-900 mb-6">{selectedFeedback.subject}</h2>
 
-               <div className="mb-10">
-                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Message Content</p>
-                  <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
-                    {selectedFeedback.message}
+              <div className="space-y-6 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 text-slate-500" />
+                  <p className="text-sm font-bold text-slate-700">{selectedFeedback.name}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-slate-400" />
+                  <p className="text-sm text-slate-500 font-medium">{selectedFeedback.email}</p>
+                </div>
+                {selectedFeedback.phone && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-slate-400" />
+                    <p className="text-sm text-slate-500 font-medium">{selectedFeedback.phone}</p>
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-4 h-4 text-slate-400" />
+                  <p className="text-sm text-slate-500 font-medium">
+                    {new Date(selectedFeedback.created_at).toLocaleString()}
                   </p>
-               </div>
+                </div>
+              </div>
 
-               <div className="flex flex-col gap-3">
-                  {selectedFeedback.status === 'pending' && (
-                    <button 
-                      onClick={() => updateStatus(selectedFeedback.id, 'read')}
-                      className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition shadow-lg shadow-slate-900/20"
-                    >
-                      <CheckCircle className="w-5 h-5" /> Mark as Read
-                    </button>
-                  )}
-                  {selectedFeedback.status !== 'resolved' && (
-                    <button 
-                      onClick={() => updateStatus(selectedFeedback.id, 'resolved')}
-                      className="w-full py-4 bg-[#FF9000] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#e68200] transition shadow-lg shadow-orange-900/20"
-                    >
-                      <CheckCircle className="w-5 h-5" /> Mark as Resolved
-                    </button>
-                  )}
-               </div>
+              <div className="mb-10">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Message Content</p>
+                <p className="text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
+                  {selectedFeedback.message}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {selectedFeedback.status === 'pending' && (
+                  <button
+                    onClick={() => updateStatus(selectedFeedback.id, 'read')}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition shadow-lg shadow-slate-900/20"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Mark as Read
+                  </button>
+                )}
+                {selectedFeedback.status !== 'resolved' && (
+                  <button
+                    onClick={() => updateStatus(selectedFeedback.id, 'resolved')}
+                    className="w-full py-4 bg-[#FF9000] text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-[#e68200] transition shadow-lg shadow-orange-900/20"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Mark as Resolved
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="bg-slate-100/50 p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center h-full flex flex-col items-center justify-center min-h-[500px]">
-               <MessageSquare className="w-16 h-16 text-slate-200 mb-6" />
-               <p className="text-slate-400 font-bold max-w-[200px] mx-auto">Select a feedback entry to view detailed information.</p>
+              <MessageSquare className="w-16 h-16 text-slate-200 mb-6" />
+              <p className="text-slate-400 font-bold max-w-[200px] mx-auto">Select a feedback entry to view detailed information.</p>
             </div>
           )}
         </div>
