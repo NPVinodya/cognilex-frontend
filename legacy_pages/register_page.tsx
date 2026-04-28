@@ -183,7 +183,7 @@ export default function RegisterPage() {
             setSuccess("Registration successful! Redirecting to chat...");
 
             setTimeout(() => {
-                router.push("/chat");
+                router.push(`/${appwriteUser.$id}/chat`);
             }, 800);
         } catch (err: any) {
             const rawMessage = err?.message || "Registration failed";
