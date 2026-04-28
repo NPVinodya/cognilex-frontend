@@ -8,7 +8,7 @@ import {
   Mail, Phone, MapPin, Clock, Send, MessageSquare, User, FileText, CheckCircle, AlertCircle, Scale, Linkedin, Facebook, Twitter, Instagram
 } from 'lucide-react';
 
-const TomTomMap = dynamic(() => import('@/components/map/TomTomMap'), { 
+const TomTomMap = dynamic(() => import('@/components/map/TomTomMap'), {
   ssr: false,
   loading: () => <div className="h-full w-full bg-slate-100 animate-pulse flex items-center justify-center text-slate-400">Loading Map...</div>
 });
@@ -16,13 +16,13 @@ const TomTomMap = dynamic(() => import('@/components/map/TomTomMap'), {
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
-    
+
     try {
-      const response = await fetch('http://localhost:8000/feedback', {
+      const response = await fetch(`${API_URL}/feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export default function ContactPage() {
                 <MessageSquare className="w-5 h-5 text-blue-300" />
                 <span className="text-sm font-bold">We're Here to Help</span>
               </div>
-              </div>
+            </div>
 
 
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">Get in Touch</h1>
@@ -176,7 +176,7 @@ export default function ContactPage() {
                   </div>
 
                   <button type="submit" disabled={status === 'loading'}
-                    className="w-full bg-slate-900 text-white py-4 rounded-lg font-bold text-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    className="w-full bg-slate-900 text-white py-4 rounded-lg font-bold text-lg hover:bg-slate-800 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed">
                     {status === 'loading' ? 'Transmitting...' : <><Send className="w-5 h-5" /> Submit Message</>}
                   </button>
                   <p className="text-xs text-slate-500 text-center uppercase tracking-wide">
@@ -194,15 +194,15 @@ export default function ContactPage() {
                   <Scale className="w-5 h-5 text-slate-700" /> Platform Access
                 </h3>
                 <div className="space-y-3">
-                  <button className="w-full text-left px-4 py-3 bg-slate-50 border border-slate-200 hover:border-amber-500 rounded-lg transition group">
+                  <button className="w-full text-left px-4 py-3 bg-slate-50 border border-slate-200 hover:border-amber-500 rounded-lg transition group cursor-pointer">
                     <p className="font-bold text-slate-900 group-hover:text-amber-600 transition">Book Consultation</p>
                     <p className="text-xs text-slate-500">Schedule with our advocates</p>
                   </button>
-                  <button className="w-full text-left px-4 py-3 bg-slate-50 border border-slate-200 hover:border-amber-500 rounded-lg transition group">
+                  <button className="w-full text-left px-4 py-3 bg-slate-50 border border-slate-200 hover:border-amber-500 rounded-lg transition group cursor-pointer">
                     <p className="font-bold text-slate-900 group-hover:text-amber-600 transition">AI Legal Chat</p>
                     <p className="text-xs text-slate-500">Automated legal responses</p>
                   </button>
-                  <button className="w-full text-left px-4 py-3 bg-slate-50 border border-slate-200 hover:border-amber-500 rounded-lg transition group">
+                  <button className="w-full text-left px-4 py-3 bg-slate-50 border border-slate-200 hover:border-amber-500 rounded-lg transition group cursor-pointer">
                     <p className="font-bold text-slate-900 group-hover:text-amber-600 transition">Lawyer Directory</p>
                     <p className="text-xs text-slate-500">Find qualified practitioners</p>
                   </button>
@@ -214,7 +214,7 @@ export default function ContactPage() {
                 <h3 className="text-lg font-bold mb-4">Official Channels</h3>
                 <div className="flex justify-center gap-4">
                   {socialLinks.map((social, idx) => (
-                    <a key={idx} href={social.url} className={`p-3 bg-slate-800 rounded-lg transition text-slate-300 ${social.hover}`} title={social.name}>
+                    <a key={idx} href={social.url} className={`p-3 bg-slate-800 rounded-lg transition text-slate-300 cursor-pointer ${social.hover}`} title={social.name}>
                       <social.icon className="w-5 h-5" />
                     </a>
                   ))}
@@ -226,7 +226,7 @@ export default function ContactPage() {
                 <Phone className="w-8 h-8 text-red-600 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-red-900 mb-2">Urgent Matters</h3>
                 <p className="text-sm text-red-700 mb-4">Immediate counsel hotline</p>
-                <a href="tel:+94771234567" className="inline-block bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition">
+                <a href="tel:+94771234567" className="inline-block bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition cursor-pointer">
                   +94 77 123 4567
                 </a>
               </div>
@@ -242,10 +242,10 @@ export default function ContactPage() {
               <p className="text-slate-600 mt-1">Mahenwaththa, Pitipana, Homagama, Sri Lanka</p>
             </div>
             <div className="h-96 bg-slate-200">
-              <TomTomMap 
-                apiKey={process.env.NEXT_PUBLIC_TOMTOM_API_KEY || ''} 
-                lat={6.8209} 
-                lng={80.0397} 
+              <TomTomMap
+                apiKey={process.env.NEXT_PUBLIC_TOMTOM_API_KEY || ''}
+                lat={6.8209}
+                lng={80.0397}
                 language="en-US"
               />
             </div>
