@@ -42,6 +42,7 @@ export default function SettingsPage() {
         confirm: false
     });
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL;
     const [showImageModal, setShowImageModal] = useState(false);
 
     // Fetch profile data on mount
@@ -52,7 +53,7 @@ export default function SettingsPage() {
                 if (!userJson) return;
                 const user = JSON.parse(userJson);
 
-                const response = await axios.get(`http://localhost:8000/lawyer-dashboard/${user.id}/profile`);
+                const response = await axios.get(`${API_URL}/lawyer-dashboard/${user.id}/profile`);
                 if (response.data.success) {
                     setProfile(response.data.profile);
                 }
