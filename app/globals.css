@@ -126,20 +126,29 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-inter), sans-serif; /* Default font for rest of site */
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-inter), sans-serif;
+    /* Default font for rest of site */
   }
 
   /* Admin Dashboard Specific Typography */
-  .admin-dashboard-root h1, 
-  .admin-dashboard-root h2, 
-  .admin-dashboard-root h3, 
+  .admin-dashboard-root h1,
+  .admin-dashboard-root h2,
+  .admin-dashboard-root h3,
   .admin-dashboard-root h4 {
     font-family: var(--font-outfit), sans-serif !important;
-    color: #000000 !important; /* Force Pure Black */
+    color: #000000 !important;
+    /* Force Pure Black */
   }
 }
 
@@ -147,9 +156,12 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 
   /* Team Color Scrollbar Styling */
@@ -163,25 +175,30 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(217, 119, 6, 0.3); /* amber-600/30 */
+    background: rgba(217, 119, 6, 0.3);
+    /* amber-600/30 */
     border-radius: 10px;
     transition: all 0.3s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(217, 119, 6, 0.6); /* amber-600/60 */
+    background: rgba(217, 119, 6, 0.6);
+    /* amber-600/60 */
   }
 
   .dark ::-webkit-scrollbar-thumb {
-    background: rgba(217, 119, 6, 0.2); /* amber-600/20 */
+    background: rgba(217, 119, 6, 0.2);
+    /* amber-600/20 */
   }
 
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: rgba(217, 119, 6, 0.4); /* amber-600/40 */
+    background: rgba(217, 119, 6, 0.4);
+    /* amber-600/40 */
   }
 }
 
-::view-transition-old(root), ::view-transition-new(root) {
-    animation: none;
-    mix-blend-mode: normal;
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
