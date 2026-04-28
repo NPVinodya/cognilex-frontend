@@ -5,7 +5,7 @@ import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import {
   Scale, Shield, Users, Target, Award, BookOpen, CheckCircle,
-  Brain, Gavel, FileText, TrendingUp, MessageSquare, Lock, Globe, Lightbulb
+  Brain, Gavel, FileText, TrendingUp, MessageSquare, Lock, Globe, Lightbulb, Languages
 } from 'lucide-react';
 
 export default function AboutPage() {
@@ -26,7 +26,7 @@ export default function AboutPage() {
   const features = [
     { icon: MessageSquare, title: 'AI Legal Assistant', description: 'Get instant answers to your legal questions powered by advanced AI trained on Sri Lankan law.' },
     { icon: Users, title: 'Verified Lawyers', description: 'Connect with thoroughly vetted and experienced lawyers across all practice areas.' },
-    { icon: FileText, title: 'Document Analysis', description: 'Upload and analyze legal documents with AI-powered insights and recommendations.' },
+    { icon: Languages, title: 'Multilingual Support', description: 'Get legal assistance in your preferred language English, Sinhala, or Tamil for better understanding.' },
     { icon: Lock, title: 'Secure Platform', description: 'Bank-level security ensures your sensitive legal information remains confidential.' },
     { icon: Globe, title: 'Island-Wide Coverage', description: 'Access legal services from any province in Sri Lanka, anytime, anywhere.' },
     { icon: TrendingUp, title: 'Transparent Pricing', description: 'Clear consultation fees with no hidden costs. Know what you pay upfront.' }
