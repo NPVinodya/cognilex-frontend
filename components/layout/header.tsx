@@ -5,15 +5,16 @@ import { usePathname } from 'next/navigation';
 import { Scale, LogIn, UserPlus, LogOut, Home, Info, Briefcase, Users, Mail, Menu, X, ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { logoutFromAppwrite } from '@/lib/appwrite';
+import { getChatHref } from '@/lib/user';
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{ name?: string } | null>(null);
+  const [chatHref, setChatHref] = useState('/login');
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -27,9 +28,10 @@ export default function Header() {
     };
 
     syncFromStorage();
+    setChatHref(getChatHref());
     window.addEventListener("storage", syncFromStorage);
     return () => window.removeEventListener("storage", syncFromStorage);
-  }, []);
+  }, [pathname]);
 
   const logout = async () => {
     setIsAuthenticated(false);
@@ -68,7 +70,7 @@ export default function Header() {
       icon: Briefcase,
       dropdown: [
         { name: 'Find Lawyers', path: '/lawyer' },
-        { name: 'AI Legal Chat', path: '/chat' },
+        { name: 'AI Legal Chat', path: chatHref },
         { name: 'My Appointments', path: '/my-appointments' },
       ]
     },
@@ -148,7 +150,7 @@ export default function Header() {
           <div className="hidden lg:flex items-center space-x-3">
             {isAuthenticated ? (
               <>
-                <div className="flex items-center space-x-3 px-4 py-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                <div className="flex items-center space-x-3 px-4 py-2 bg-white/10 rounded-lg backdrop-blur-sm cursor-pointer" onClick={() => router.push(chatHref)}>
                   <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                     <span className="text-amber-600 font-bold text-sm">
                       {user?.name?.charAt(0).toUpperCase()}

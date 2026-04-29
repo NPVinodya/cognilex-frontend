@@ -38,6 +38,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
     title: 'Lawyer',
     avatar: ''
   });
+  const [chatHref, setChatHref] = React.useState('/login');
 
   const [isPageLoading, setIsPageLoading] = React.useState(true);
   const [loadingProgress, setLoadingProgress] = React.useState(0);
@@ -62,6 +63,24 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
   }, [pathname]);
 
   React.useEffect(() => {
+    const resolveChatHref = () => {
+      try {
+        const rawUser = localStorage.getItem('user');
+        if (!rawUser || rawUser === 'undefined' || rawUser === 'null') {
+          setChatHref('/login');
+          return;
+        }
+
+        const user = JSON.parse(rawUser) as { $id?: string; id?: string; _id?: string; userId?: string; email?: string };
+        const userId = user.$id || user.id || user._id || user.userId || user.email;
+        setChatHref(userId ? `/${userId}/chat` : '/login');
+      } catch {
+        setChatHref('/login');
+      }
+    };
+
+    resolveChatHref();
+
     const fetchLawyerInfo = async () => {
       try {
         const userJson = localStorage.getItem('user');
@@ -142,7 +161,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
         <div className="p-4 mt-auto border-t border-white/5 space-y-2">
           {/* AI Chat Button */}
           <Link
-            href="/chat"
+            href={chatHref}
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500/10 to-orange-600/5 text-[#FF9000] border border-orange-500/10 hover:border-orange-500/30 transition-all font-bold w-full active:scale-95 group mb-1 shadow-sm"
           >
             <Sparkles className="h-4 w-4 transition-transform group-hover:scale-110" />
