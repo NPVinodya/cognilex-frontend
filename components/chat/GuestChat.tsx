@@ -13,12 +13,20 @@ export default function GuestChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [guestMessageCount, setGuestMessageCount] = useState(0);
+  const messageListRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const shouldPromptRegistration = guestMessageCount >= GUEST_MESSAGE_LIMIT;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length === 0) {
+      return;
+    }
+
+    const messageList = messageListRef.current;
+    if (messageList) {
+      messageList.scrollTop = messageList.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async () => {
@@ -81,7 +89,7 @@ export default function GuestChat() {
           </span>
         </div>
 
-        <div className="space-y-6 min-h-[300px] max-h-[500px] overflow-y-auto mb-8 pr-2 no-scrollbar">
+        <div ref={messageListRef} className="space-y-6 min-h-[300px] max-h-[500px] overflow-y-auto mb-8 pr-2 no-scrollbar">
           {messages.length === 0 ? (
             <div className="h-[250px] flex flex-col items-center justify-center text-center opacity-40">
               <MessageSquare className="w-12 h-12 text-white mb-4" />
