@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { DashboardContext } from '@/app/lawyerDashboard/layout';
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
+
 import {
     Popover,
     PopoverContent,
