@@ -9,9 +9,24 @@ const CONVERSATIONS = [
     { id: '3', name: 'Corporate Tech Inc.', preview: 'Thanks for the contract review Prabani.', time: 'Mar 24', unread: 0, online: true },
 ];
 
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
+
 export default function MessagesPage() {
+    const { setIsPageLoading, setLoadingProgress } = React.useContext(DashboardContext);
     const [selectedChat, setSelectedChat] = useState(CONVERSATIONS[0]);
     const [showChatMobile, setShowChatMobile] = useState(false);
+
+    React.useEffect(() => {
+        // Simulate a small delay for consistency
+        setTimeout(() => {
+            setLoadingProgress(100);
+            setTimeout(() => setIsPageLoading(false), 200);
+        }, 500);
+    }, []);
+
+
 
     return (
         <div className="flex flex-col h-[calc(100vh-140px)]">

@@ -1,10 +1,32 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
 import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Search, Filter,
-    MoreVertical, FileText, CheckCircle2, XCircle, User, Trash2, Edit, X, Info
+    MoreVertical, FileText, CheckCircle2, XCircle, User, Trash2, Edit, X, Info, Loader2
 } from 'lucide-react';
+import { cn } from "@/lib/utils";
+import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+const TIME_SLOTS = [
+    "08:00 AM - 09:00 AM",
+    "09:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "01:00 PM - 02:00 PM",
+    "02:00 PM - 03:00 PM",
+    "03:00 PM - 04:00 PM",
+    "04:00 PM - 05:00 PM",
+    "05:00 PM - 06:00 PM",
+];
 
 type AppointmentStatus = 'Confirmed' | 'Pending' | 'Canceled' | 'Completed' | 'Available';
 
@@ -21,9 +43,12 @@ interface Appointment {
     isBooked: boolean;
 }
 
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+
 export default function AppointmentsPage() {
+    const { setIsPageLoading, setLoadingProgress } = useContext(DashboardContext);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'Upcoming' | 'Past' | 'Canceled'>('Upcoming');
     const [searchQuery, setSearchQuery] = useState('');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -32,6 +57,7 @@ export default function AppointmentsPage() {
     // Modals state
     const [showNewModal, setShowNewModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
+    const [showInlineAdd, setShowInlineAdd] = useState(false);
     const [selectedApt, setSelectedApt] = useState<Appointment | null>(null);
 
     // New Slot Form State
@@ -44,27 +70,60 @@ export default function AppointmentsPage() {
     const [isCreating, setIsCreating] = useState(false);
 
     const fetchAppointments = async () => {
-        setLoading(true);
         try {
             const storedUser = localStorage.getItem("user");
-            if (!storedUser) return;
+            if (!storedUser) {
+                setLoadingProgress(100);
+                setTimeout(() => setIsPageLoading(false), 200);
+                return;
+            }
             const user = JSON.parse(storedUser);
-            const lawyerId = user.id || user._id;
+            let currentLawyerId = user.id || user._id;
+
+            // Fallback: search by email if ID is missing
+            if (!currentLawyerId && user.email) {
+                try {
+                    const profileRes = await fetch(`/api/lawyer/all?email=${encodeURIComponent(user.email)}`);
+                    const profileData = await profileRes.json();
+                    if (profileData.success && profileData.lawyers?.length > 0) {
+                        currentLawyerId = profileData.lawyers[0].id || profileData.lawyers[0]._id;
+                    }
+                } catch (e) {
+                    console.error("Email fallback check failed", e);
+                }
+            }
+
+            if (!currentLawyerId) {
+                setLoadingProgress(100);
+                setTimeout(() => setIsPageLoading(false), 200);
+                return;
+            }
 
             let statusFilter = "all";
             if (activeTab === "Upcoming") statusFilter = "upcoming";
             if (activeTab === "Past") statusFilter = "completed";
             if (activeTab === "Canceled") statusFilter = "canceled";
 
-            const res = await fetch(`/api/lawyer/dashboard?lawyerId=${lawyerId}&type=all-appointments&status=${statusFilter}`);
+            // Try type=all-appointments first, fallback to type=appointments if empty
+            const res = await fetch(`/api/lawyer/dashboard?lawyerId=${currentLawyerId}&type=all-appointments&status=${statusFilter}`);
             const data = await res.json();
+            
             if (data.success) {
                 setAppointments(data.appointments || []);
+            } else {
+                // Try alternate type if first one fails
+                const altRes = await fetch(`/api/lawyer/dashboard?lawyerId=${currentLawyerId}&type=appointments`);
+                const altData = await altRes.json();
+                if (altData.success) {
+                    setAppointments(altData.appointments || altData.slots || []);
+                }
             }
+            setLoadingProgress(100);
+            setTimeout(() => setIsPageLoading(false), 200);
         } catch (error) {
             console.error("Error fetching appointments:", error);
-        } finally {
-            setLoading(false);
+            setLoadingProgress(100);
+            setTimeout(() => setIsPageLoading(false), 200);
         }
     };
 
@@ -125,8 +184,10 @@ export default function AppointmentsPage() {
         }
     };
 
-    const handleCreateSlot = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleCreateSlot = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!newSlot.date || !newSlot.time) return alert("Please pick a Date and Time.");
+        
         setIsCreating(true);
         try {
             const storedUser = localStorage.getItem("user");
@@ -146,7 +207,8 @@ export default function AppointmentsPage() {
             const data = await res.json();
             if (data.success) {
                 setShowNewModal(false);
-                setNewSlot({ date: '', time: '', location: '', type: 'Consultation' });
+                // Keep date and location for consecutive adds
+                setNewSlot({ date: newSlot.date, time: '', location: newSlot.location, type: 'Consultation' });
                 fetchAppointments(); // Refresh
             } else {
                 alert(data.message || "Failed to create slot");
@@ -183,8 +245,10 @@ export default function AppointmentsPage() {
         return 'bg-slate-100 text-slate-600';
     };
 
+
+
     return (
-        <div className="p-4 md:p-8">
+        <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
                 <div>
                     <h1 className="text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Appointments</h1>
@@ -192,9 +256,9 @@ export default function AppointmentsPage() {
                 </div>
                 <button 
                     onClick={() => setShowNewModal(true)}
-                    className="inline-flex items-center justify-center gap-2 bg-[#FF9000] hover:bg-[#E68200] text-white px-6 py-2.5 rounded-full shadow-md shadow-orange-600/20 text-sm font-bold transition"
+                    className="inline-flex items-center justify-center gap-2 bg-[#FF9000] hover:bg-[#E68200] text-white px-6 py-3 rounded-full shadow-lg shadow-orange-600/20 text-sm font-bold transition-all active:scale-95"
                 >
-                    <Plus className="w-4 h-4" /> New Appointment
+                    <Plus className="w-4 h-4" strokeWidth={3} /> Add Availability Slot
                 </button>
             </div>
 
@@ -337,77 +401,169 @@ export default function AppointmentsPage() {
                         )}
                     </div>
                 </div>
+
+                {/* Inline Add Section at the bottom */}
+                <div className="p-6 md:px-8 border-t border-slate-100 bg-slate-50/30">
+                    {!showInlineAdd ? (
+                        <button 
+                            onClick={() => setShowInlineAdd(true)}
+                            className="group flex items-center gap-4 p-4 w-full rounded-2xl border-2 border-dashed border-slate-200 hover:border-orange-300 hover:bg-orange-50/50 transition-all duration-300"
+                        >
+                            <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Plus className="w-6 h-6 text-[#FF9000]" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-[#181B25] font-bold text-[15px]">Quick Add Availability</p>
+                                <p className="text-slate-400 text-xs font-medium">Add another slot to your schedule without opening a modal</p>
+                            </div>
+                        </button>
+                    ) : (
+                        <div className="w-full bg-white border border-orange-100 rounded-2xl p-6 shadow-sm animate-in slide-in-from-bottom-4 duration-300">
+                            <div className="flex flex-col sm:flex-row items-end gap-4">
+                                <div className="flex-1 w-full space-y-2">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Select Date</label>
+                                    <input 
+                                        type="date" 
+                                        value={newSlot.date}
+                                        onChange={(e) => setNewSlot({...newSlot, date: e.target.value})}
+                                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium" 
+                                    />
+                                </div>
+                                <div className="flex-1 w-full space-y-2">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Select Time</label>
+                                    <Select onValueChange={(val) => setNewSlot({...newSlot, time: val})} value={newSlot.time}>
+                                        <SelectTrigger className="h-11 bg-slate-50 border-slate-200 rounded-xl font-medium">
+                                            <SelectValue placeholder="Time" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white">
+                                            {TIME_SLOTS.map(t => (
+                                                <SelectItem key={t} value={t}>{t}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex-1 w-full space-y-2">
+                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Location</label>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Location"
+                                        value={newSlot.location}
+                                        onChange={(e) => setNewSlot({...newSlot, location: e.target.value})}
+                                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium" 
+                                    />
+                                </div>
+                                <div className="shrink-0 w-full sm:w-auto">
+                                    <Button 
+                                        disabled={isCreating}
+                                        onClick={() => handleCreateSlot()}
+                                        className="h-11 px-8 bg-[#FF9000] hover:bg-[#E68200] text-white font-bold rounded-xl w-full flex items-center gap-2 shadow-lg shadow-orange-500/20"
+                                    >
+                                        {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                        Add Slot
+                                    </Button>
+                                </div>
+                                <button 
+                                    onClick={() => setShowInlineAdd(false)}
+                                    className="h-11 w-11 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* New Appointment Modal */}
             {showNewModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                             <div>
-                                <h2 className="text-xl font-bold text-[#181B25]">New Availability Slot</h2>
+                                <h2 className="text-2xl font-bold text-[#181B25]">Create Availability Slot</h2>
                                 <p className="text-sm text-slate-500 font-medium">Add a new time slot to your schedule.</p>
                             </div>
                             <button onClick={() => setShowNewModal(false)} className="p-2 hover:bg-slate-200 rounded-full transition text-slate-400">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateSlot} className="p-6 space-y-5">
-                            <div className="grid grid-cols-2 gap-4">
+                        <form onSubmit={handleCreateSlot} className="p-8 space-y-6">
+                            <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Date</label>
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Date</label>
                                     <input 
                                         type="date" 
                                         required 
                                         value={newSlot.date}
                                         onChange={e => setNewSlot({...newSlot, date: e.target.value})}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Time</label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="10:00 AM"
-                                        required 
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Time Slot</label>
+                                    <Select
                                         value={newSlot.time}
-                                        onChange={e => setNewSlot({...newSlot, time: e.target.value})}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition"
-                                    />
+                                        onValueChange={(val) => setNewSlot({ ...newSlot, time: val })}
+                                    >
+                                        <SelectTrigger className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-6 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition">
+                                            <SelectValue placeholder="Select a time slot" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl">
+                                            {TIME_SLOTS.map((slot) => (
+                                                <SelectItem key={slot} value={slot} className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">
+                                                    {slot}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Meeting Location</label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Court Complex, Colombo"
+                                            value={newSlot.location}
+                                            onChange={e => setNewSlot({...newSlot, location: e.target.value})}
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Appointment Type</label>
+                                    <Select
+                                        value={newSlot.type}
+                                        onValueChange={(val) => setNewSlot({ ...newSlot, type: val })}
+                                    >
+                                        <SelectTrigger className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-6 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition">
+                                            <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl">
+                                            <SelectItem value="Consultation" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Consultation</SelectItem>
+                                            <SelectItem value="Court" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Court Appearance</SelectItem>
+                                            <SelectItem value="Meeting" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Meeting</SelectItem>
+                                            <SelectItem value="Others" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Others</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Type of Session</label>
-                                <select 
-                                    value={newSlot.type}
-                                    onChange={e => setNewSlot({...newSlot, type: e.target.value})}
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition appearance-none"
+                            <div className="flex gap-3 mt-8">
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowNewModal(false)}
+                                    className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-sm transition"
                                 >
-                                    <option>Consultation</option>
-                                    <option>Court Session</option>
-                                    <option>Internal Meeting</option>
-                                </select>
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    disabled={isCreating}
+                                    className="flex-1 py-3.5 bg-[#FF9000] hover:bg-[#E68200] text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-600/20 transition disabled:opacity-50"
+                                >
+                                    {isCreating ? 'Creating...' : 'Save Slot'}
+                                </button>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Location</label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Court Complex, Colombo"
-                                        value={newSlot.location}
-                                        onChange={e => setNewSlot({...newSlot, location: e.target.value})}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition"
-                                    />
-                                </div>
-                            </div>
-                            <button 
-                                type="submit" 
-                                disabled={isCreating}
-                                className="w-full py-3.5 bg-[#FF9000] hover:bg-[#E68200] text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-                            >
-                                {isCreating ? 'Creating...' : 'Create Availability Slot'}
-                            </button>
                         </form>
                     </div>
                 </div>
@@ -508,6 +664,6 @@ export default function AppointmentsPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

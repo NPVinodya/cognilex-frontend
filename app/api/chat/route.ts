@@ -83,18 +83,19 @@ export async function POST(req: Request) {
     const question = typeof body.question === 'string' ? body.question.trim() : '';
     const user_id = typeof body.user_id === 'string' && body.user_id.trim() ? body.user_id.trim() : 'guest_user';
     const session_id = typeof body.session_id === 'string' ? body.session_id.trim() : null;
+    const mode = body.mode === 'research' ? 'research' : 'legal'; // default to 'legal'
 
     if (!question) {
       return Response.json({ message: 'Question is required' }, { status: 400 });
     }
 
     const endpoint = `${REST_CHAT_URL}/ask`;
-    console.log(`[Proxy POST] Forwarding to: ${endpoint} (session_id: ${session_id})`);
+    console.log(`[Proxy POST] Forwarding to: ${endpoint} (session_id: ${session_id}, mode: ${mode})`);
 
     const restRes = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, user_id, session_id }),
+      body: JSON.stringify({ question, user_id, session_id, mode }),
     }).catch(err => {
       console.error('[Proxy POST] Fetch failed:', err.message);
       throw err;

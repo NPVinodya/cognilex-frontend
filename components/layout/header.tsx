@@ -112,20 +112,22 @@ export default function Header() {
                     <div
                       onMouseEnter={() => setServicesOpen(true)}
                       onMouseLeave={() => setServicesOpen(false)}
-                      className="absolute top-full mt-2 w-48 bg-white rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200"
+                      className="absolute top-full left-0 pt-2 w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
                     >
-                      {item.dropdown.map((dropItem) => (
-                        <button
-                          key={dropItem.name}
-                          onClick={() => {
-                            router.push(dropItem.path);
-                            setServicesOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-2.5 transition-colors duration-200 font-medium cursor-pointer ${pathname === dropItem.path ? 'bg-amber-50 text-amber-700' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
-                        >
-                          {dropItem.name}
-                        </button>
-                      ))}
+                      <div className="bg-white rounded-xl shadow-2xl py-2 border border-slate-100">
+                        {item.dropdown.map((dropItem) => (
+                          <button
+                            key={dropItem.name}
+                            onClick={() => {
+                              router.push(dropItem.path);
+                              setServicesOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2.5 transition-colors duration-200 font-medium cursor-pointer ${pathname === dropItem.path ? 'bg-amber-50 text-amber-700' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
+                          >
+                            {dropItem.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

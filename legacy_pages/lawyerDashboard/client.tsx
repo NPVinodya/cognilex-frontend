@@ -5,6 +5,7 @@ import {
     Users, Search, Filter, Plus, Phone, Mail, MoreVertical, 
     Briefcase, Calendar, Clock, MapPin, X, CreditCard, CheckCircle2 
 } from 'lucide-react';
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
 
 interface Client {
     id: string;
@@ -27,9 +28,12 @@ interface BookingRecord {
     status: string;
 }
 
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+
 export default function ClientsPage() {
+    const { setIsPageLoading, setLoadingProgress } = React.useContext(DashboardContext);
     const [clients, setClients] = useState<Client[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     
     // Dropdown & Modal State
@@ -53,8 +57,11 @@ export default function ClientsPage() {
             if (data.success) {
                 setClients(data.clients || []);
             }
+            setLoadingProgress(100);
+            setTimeout(() => setIsPageLoading(false), 200);
         } catch (error) {
             console.error("Error fetching clients:", error);
+            setIsPageLoading(false);
         } finally {
             setLoading(false);
         }
@@ -102,8 +109,10 @@ export default function ClientsPage() {
         (client.id || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+
+
     return (
-        <div className="p-4 md:p-8">
+        <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
                 <div>
                     <h1 className="text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Clients</h1>
@@ -247,6 +256,6 @@ export default function ClientsPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

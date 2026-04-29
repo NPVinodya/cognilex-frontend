@@ -1,15 +1,43 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { cn } from "@/lib/utils";
 import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Edit, Trash2,
     Users, TrendingUp, Star, Settings, ChevronRight, ChevronLeft, CheckCircle2,
-    X, Info, User, FileText, XCircle
+    X, Info, User, FileText, XCircle, Loader2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
+import { format } from "date-fns";
+
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
+const TIME_SLOTS = [
+    "08:00 AM - 09:00 AM",
+    "09:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "01:00 PM - 02:00 PM",
+    "02:00 PM - 03:00 PM",
+    "03:00 PM - 04:00 PM",
+    "04:00 PM - 05:00 PM",
+    "05:00 PM - 06:00 PM",
+];
 
 interface AvailabilitySlot {
     id: string;
@@ -29,14 +57,15 @@ interface AvailabilitySlot {
 export default function LawyerDashboard() {
     const router = useRouter();
 
+    const { setIsPageLoading, setLoadingProgress } = React.useContext(DashboardContext);
     const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>([]);
     const [stats, setStats] = useState<any>(null);
     const [lawyerName, setLawyerName] = useState("Counsel");
 
 
-    const [loading, setLoading] = useState(true);
-    const [loadingProgress, setLoadingProgress] = useState(18);
+    const [loading, setLoading] = useState(false);
     const [isAddSlotOpen, setIsAddSlotOpen] = useState(false);
+    const [showInlineAdd, setShowInlineAdd] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedApt, setSelectedApt] = useState<any>(null);
     const [newSlot, setNewSlot] = useState({ date: '', time: '', type: 'Consultation', location: '' });
@@ -44,7 +73,7 @@ export default function LawyerDashboard() {
 
     // Calendar State
     const [pivotDate, setPivotDate] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
     const [viewMode, setViewMode] = useState<'daily' | 'all'>('daily');
 
     const getWeekDays = (baseDate: Date) => {
@@ -57,7 +86,7 @@ export default function LawyerDashboard() {
             const d = new Date(baseDate);
             d.setDate(baseDate.getDate() + i);
             days.push({
-                full: d.toISOString().split('T')[0],
+                full: format(d, 'yyyy-MM-dd'),
                 dayName: d.toLocaleString('en-US', { weekday: 'short' }),
                 dateNum: d.getDate(),
                 isToday: d.toDateString() === new Date().toDateString()
@@ -79,18 +108,12 @@ export default function LawyerDashboard() {
     const fetchData = async (isSilent = false) => {
         try {
             const storedUser = localStorage.getItem("user");
-            if (!storedUser) {
-                if (!isSilent) {
-                    setLoadingProgress(100);
-                    setLoading(false);
-                }
-                return;
-            }
+            if (!storedUser) return;
 
             const user = JSON.parse(storedUser);
             let currentLawyerId = user.id || user._id;
 
-            // Fallback: If lawyerId is missing from standard keys, try to find it via email
+            // Fallback logic
             if (!currentLawyerId && user.email) {
                 try {
                     const profileRes = await fetch(`/api/lawyer/all?email=${encodeURIComponent(user.email)}`);
@@ -105,37 +128,24 @@ export default function LawyerDashboard() {
 
             if (user.name) setLawyerName(user.name.split(' ')[0]);
 
-            if (!currentLawyerId) {
-                if (!isSilent) {
-                    setLoadingProgress(100);
-                    setLoading(false);
-                }
-                return;
-            }
+            if (!currentLawyerId) return;
 
-            if (!isSilent) setLoadingProgress(45);
-            
-            // Fetch Stats and Appointments in parallel for efficiency
             const [statsRes, slotsRes] = await Promise.all([
                 fetch(`/api/lawyer/dashboard?lawyerId=${currentLawyerId}&type=stats`),
                 fetch(`/api/lawyer/dashboard?lawyerId=${currentLawyerId}&type=appointments`)
             ]);
 
-            if (!isSilent) setLoadingProgress(78);
-
             const statsData = await statsRes.json();
             const slotsData = await slotsRes.json();
 
-            // Calculate Today's counts from slots
-            const todayStr = new Date().toISOString().split('T')[0];
+            // Calculate Today's counts
+            const todayStr = format(new Date(), 'yyyy-MM-dd');
             const todayBookings = (slotsData.slots || []).filter((s: any) => s.date === todayStr && s.isBooked).length;
             const todayTotalSlots = (slotsData.slots || []).filter((s: any) => s.date === todayStr).length;
 
-            // Handle various possible response structures for Stats
             const statsObj = statsData.stats || (statsData.success ? statsData : null);
 
             if (statsObj) {
-                // Normalize stats data (handle both snake_case and camelCase)
                 const normalizedStats = {
                     totalBookings: statsObj.totalBookings ?? statsObj.total_bookings ?? statsObj.bookings_count ?? 0,
                     todayBookings: todayBookings,
@@ -150,14 +160,11 @@ export default function LawyerDashboard() {
 
             if (!isSilent) {
                 setLoadingProgress(100);
-                setTimeout(() => setLoading(false), 300);
+                setTimeout(() => setIsPageLoading(false), 200);
             }
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
-            if (!isSilent) {
-                setLoadingProgress(100);
-                setLoading(false);
-            }
+            if (!isSilent) setIsPageLoading(false);
         }
     };
 
@@ -171,28 +178,6 @@ export default function LawyerDashboard() {
 
         return () => clearInterval(interval);
     }, []);
-
-    useEffect(() => {
-        if (!loading) return;
-
-        const timer = window.setInterval(() => {
-            setLoadingProgress((prev) => (prev < 90 ? prev + 3 : prev));
-        }, 220);
-
-        return () => window.clearInterval(timer);
-    }, [loading]);
-
-    if (loading) {
-        return (
-            <div className="flex min-h-[70vh] items-center justify-center">
-                <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p className="mb-3 text-center text-sm font-semibold text-slate-700">Loading Lawyer Dashboard...</p>
-                    <Progress value={loadingProgress} className="h-3" />
-                    <p className="mt-3 text-center text-xs font-bold text-orange-600">{Math.round(loadingProgress)}%</p>
-                </div>
-            </div>
-        );
-    }
 
     const handleSaveSlot = async () => {
         if (!newSlot.date || !newSlot.time) return alert("Please pick a Date and Time.");
@@ -222,10 +207,10 @@ export default function LawyerDashboard() {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                alert("Slot created successfully!");
+                // Keep inline add open for next entry
                 fetchData();
                 setIsAddSlotOpen(false);
-                setNewSlot({ date: '', time: '', type: 'Consultation', location: '' });
+                setNewSlot({ date: newSlot.date, time: '', type: 'Consultation', location: newSlot.location });
             } else {
                 alert(`Error: ${data.message || "Failed to create slot"}`);
             }
@@ -329,7 +314,7 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Bookings</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.todayBookings || 0}</h3>
+                        <h3 className="text-[26px] font-black text-[#181B25] leading-none">{stats?.todayBookings || 0}</h3>
                     </div>
                 </div>
 
@@ -343,7 +328,7 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Total Slots</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.todaySlots || 0}</h3>
+                        <h3 className="text-[26px] font-black text-[#181B25] leading-none">{stats?.todaySlots || 0}</h3>
                     </div>
                 </div>
 
@@ -357,7 +342,9 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Active Clients</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.activeClients || 0}</h3>
+                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
+                            {(stats?.activeClients || 0).toLocaleString()}
+                        </h3>
                     </div>
                 </div>
             </div>
@@ -469,6 +456,7 @@ export default function LawyerDashboard() {
                                                                 {slot.time}
                                                             </span>
                                                         </div>
+
                                                         <h4 className="text-lg font-bold text-[#181B25] tracking-tight">
                                                             {slot.isBooked ? slot.clientName : 'Open Available Slot'}
                                                         </h4>
@@ -498,12 +486,80 @@ export default function LawyerDashboard() {
                                     )
                                 }) : (
                                     <div className="py-10 text-center">
-                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                                            <CalendarIcon className="w-8 h-8 text-slate-300" />
-                                        </div>
                                         <p className="text-slate-400 font-bold text-sm">No slots scheduled for this date.</p>
                                     </div>
                                 )}
+
+                                {/* Always show add option at the bottom */}
+                                <div className="pt-6 border-t border-slate-100 mt-6">
+                                    {!showInlineAdd ? (
+                                        <button 
+                                            onClick={() => setShowInlineAdd(true)}
+                                            className="group flex items-center gap-4 p-4 w-full rounded-2xl border-2 border-dashed border-slate-100 hover:border-orange-200 hover:bg-orange-50/30 transition-all duration-300"
+                                        >
+                                            <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                <Plus className="w-6 h-6 text-[#FF9000]" />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-slate-900 font-bold text-[15px]">Add More Availability</p>
+                                                <p className="text-slate-400 text-xs font-medium">Click to open the quick add form</p>
+                                            </div>
+                                        </button>
+                                    ) : (
+                                        <div className="w-full bg-slate-50/50 border border-slate-100 rounded-2xl p-6 animate-in slide-in-from-bottom-4 duration-300">
+                                            <div className="flex flex-col sm:flex-row items-end gap-4">
+                                                <div className="flex-1 w-full space-y-2">
+                                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Select Date</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={newSlot.date}
+                                                        onChange={(e) => setNewSlot({...newSlot, date: e.target.value})}
+                                                        className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium" 
+                                                    />
+                                                </div>
+                                                <div className="flex-1 w-full space-y-2">
+                                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Select Time</label>
+                                                    <Select onValueChange={(val) => setNewSlot({...newSlot, time: val})} value={newSlot.time}>
+                                                        <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl font-medium">
+                                                            <SelectValue placeholder="Time" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {TIME_SLOTS.map(t => (
+                                                                <SelectItem key={t} value={t}>{t}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="flex-1 w-full space-y-2">
+                                                    <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Location</label>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Location"
+                                                        value={newSlot.location}
+                                                        onChange={(e) => setNewSlot({...newSlot, location: e.target.value})}
+                                                        className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium" 
+                                                    />
+                                                </div>
+                                                <div className="shrink-0 w-full sm:w-auto">
+                                                    <Button 
+                                                        disabled={isSaving}
+                                                        onClick={handleSaveSlot}
+                                                        className="h-11 px-8 bg-[#FF9000] hover:bg-[#E68200] text-white font-bold rounded-xl w-full flex items-center gap-2 shadow-lg shadow-orange-500/20"
+                                                    >
+                                                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                                        Add
+                                                    </Button>
+                                                </div>
+                                                <button 
+                                                    onClick={() => setShowInlineAdd(false)}
+                                                    className="h-11 w-11 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -633,14 +689,22 @@ export default function LawyerDashboard() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Time (e.g. 10:00 AM - 11:00 AM)</label>
-                                    <input
-                                        type="text"
-                                        placeholder="10:00 AM - 11:00 AM"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition"
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Time Slot</label>
+                                    <Select
                                         value={newSlot.time}
-                                        onChange={e => setNewSlot({ ...newSlot, time: e.target.value })}
-                                    />
+                                        onValueChange={(val) => setNewSlot({ ...newSlot, time: val })}
+                                    >
+                                        <SelectTrigger className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-6 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition">
+                                            <SelectValue placeholder="Select a time slot" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl">
+                                            {TIME_SLOTS.map((slot) => (
+                                                <SelectItem key={slot} value={slot} className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">
+                                                    {slot}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Meeting Location (Physical Address)</label>
@@ -654,15 +718,20 @@ export default function LawyerDashboard() {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">Appointment Type</label>
-                                    <select
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition appearance-none"
+                                    <Select
                                         value={newSlot.type}
-                                        onChange={e => setNewSlot({ ...newSlot, type: e.target.value })}
+                                        onValueChange={(val) => setNewSlot({ ...newSlot, type: val })}
                                     >
-                                        <option value="Consultation">Consultation</option>
-                                        <option value="Court">Court Appearance</option>
-                                        <option value="Meeting">Meeting</option>
-                                    </select>
+                                        <SelectTrigger className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-6 text-slate-900 focus:ring-2 focus:ring-[#FF9000] outline-none transition">
+                                            <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-white border border-slate-200 shadow-xl rounded-xl">
+                                            <SelectItem value="Consultation" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Consultation</SelectItem>
+                                            <SelectItem value="Court" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Court Appearance</SelectItem>
+                                            <SelectItem value="Meeting" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Meeting</SelectItem>
+                                            <SelectItem value="Others" className="hover:bg-orange-50 focus:bg-orange-50 cursor-pointer py-3 px-4">Others</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 
