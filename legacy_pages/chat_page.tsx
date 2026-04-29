@@ -1,12 +1,12 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { ChangeEvent, useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import SettingsModal from "@/components/chat/SettingsModal";
 import CorporatePlanModal from "@/components/chat/CorporatePlanModal";
 import SupportDeskModal from "@/components/chat/SupportDeskModal";
 import { useRouter } from "next/navigation";
 import { logoutFromAppwrite } from "@/lib/appwrite";
-import { Scale, Home } from "lucide-react";
+import { Scale } from "lucide-react";
 
 type Message = {
   role: "user" | "bot";
@@ -16,6 +16,8 @@ type Message = {
   latency?: string;
   mode?: string;
 };
+
+type ChatMode = "legal" | "research";
 
 /** Resolve user_id from localStorage — used as RAG session key */
 function resolveUserId(): string {
@@ -29,9 +31,29 @@ function resolveUserId(): string {
   }
 }
 
+function detectChatMode(text: string): ChatMode {
+  const lower = text.toLowerCase();
+  const researchHits = [
+    "case", "cases", "judgment", "judgement", "judgments", "ruling",
+    "verdict", "court", "precedent", "plaintiff", "defendant",
+    "appeal", "appellant", "respondent", "held", "justice", "bench",
+    "නඩුව", "තීරණය", "උසාවිය", "අභියාචනය", "வழக்கு", "தீர்ப்பு", "நீதிமன்றம்",
+  ].filter(k => lower.indexOf(k) !== -1).length;
+  const legalHits = [
+    "act", "acts", "section", "statute", "law", "regulation", "ordinance",
+    "provision", "clause", "amendment", "article", "schedule", "part",
+    "chapter", "subsection", "පනත", "වගන්ති", "නීතිය", "රෙගුලාසි",
+    "சட்டம்", "பிரிவு", "ஒழுங்குமுறை",
+  ].filter(k => lower.indexOf(k) !== -1).length;
+  return researchHits > legalHits ? "research" : "legal";
+}
+
 export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: string; userId?: string }) {
   const router = useRouter();
+  const chatApiBase = `${process.env.NEXT_PUBLIC_API_URL}`;
+  const chatApiUrl = (path: string) => `${chatApiBase}/chat${path}`;
   const [question, setQuestion] = useState("");
+  const [selectedMode, setSelectedMode] = useState<ChatMode>("legal");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -54,7 +76,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
   const renameSession = async (sid: string, newTitle: string) => {
     if (!newTitle.trim()) return setEditingSessionId(null);
     try {
-      const res = await fetch(`/api/chat?session_id=${sid}&title=${encodeURIComponent(newTitle)}`, {
+      const res = await fetch(chatApiUrl(`/session/${sid}/title?title=${encodeURIComponent(newTitle)}`), {
         method: "PATCH"
       });
       if (res.ok) {
@@ -68,6 +90,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // ── Voice ──────────────────────────────────────────────────────────────────
   const speak = (text: string) => {
@@ -138,7 +161,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
   const fetchSessions = async () => {
     try {
       const email = resolveUserId();
-      const res = await fetch(`/api/chat?user_id=${email}`);
+      const res = await fetch(chatApiUrl(`/sessions?user_id=${encodeURIComponent(email)}`));
       const data = await res.json();
       if (res.ok) setSessions(data.sessions || []);
     } catch (e) { console.error("Failed to fetch sessions:", e); }
@@ -149,7 +172,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
     setActiveSessionId(sid);
     if (window.innerWidth < 768) setSidebarOpen(false);
     try {
-      const res = await fetch(`/api/chat?session_id=${sid}`);
+      const res = await fetch(chatApiUrl(`/history?session_id=${encodeURIComponent(sid)}`));
       const data = await res.json();
       if (res.ok && data.messages) {
         setMessages(data.messages.map((m: any) => ({
@@ -193,16 +216,18 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
     if (email && email !== "guest_user") fetchSessions();
   }, []);
 
-  // ── Core API call — Browser → /api/chat → REST API /chat/ask → RAG /ask ───
+  // ── Core API call — Browser → FastAPI /chat/ask → chat_controller → ragtwo ──
   const callChatAPI = async (q: string): Promise<Message> => {
     const currentSid = activeSessionId;
-    const res = await fetch("/api/chat", {
+    const parsedMode = selectedMode;
+    const res = await fetch(chatApiUrl("/ask"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         question: q,
         user_id: resolveUserId(),
-        session_id: currentSid
+        session_id: currentSid,
+        mode: parsedMode,
       }),
     });
     const data = await res.json();
@@ -251,7 +276,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
   };
 
   // ── PDF upload — asks RAG to describe the file ────────────────────────────
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const q = `📁 Please summarize and analyse the legal document: ${file.name}`;
@@ -449,13 +474,43 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
         {showSupportDesk && <SupportDeskModal onClose={() => setShowSupportDesk(false)} />}
 
         <header className="h-16 md:h-20 flex items-center justify-between px-4 md:px-8 border-b border-slate-200 dark:border-slate-800/50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/40 z-10">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <button
               onClick={() => setSidebarOpen(!isSidebarOpen)}
               className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all text-slate-500 dark:text-slate-400 border border-transparent hover:border-slate-200 dark:hover:border-white/10"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
+
+            {/* ── MODE TOGGLE SWITCH ────────────────────────────────────────────── */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
+              <button
+                id="mode-legal-btn"
+                onClick={() => setSelectedMode("legal")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                  selectedMode === "legal"
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-600/30"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                }`}
+                title="Legal mode: answers from Acts & Statutes"
+              >
+                <span>⚖️</span>
+                <span className="hidden sm:inline">Legal</span>
+              </button>
+              <button
+                id="mode-research-btn"
+                onClick={() => setSelectedMode("research")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                  selectedMode === "research"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                }`}
+                title="Research mode: answers from Case Law & Judgements"
+              >
+                <span>📚</span>
+                <span className="hidden sm:inline">Research</span>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">
@@ -546,12 +601,26 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
             <button onClick={startListening} className="p-4 text-slate-400 hover:text-amber-500 transition-all hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full active:scale-90">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
             </button>
-            <input
-              className="flex-1 bg-transparent border-none outline-none py-4 px-3 text-[15px] md:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-medium"
+            <textarea
+              ref={textareaRef}
+              className="flex-1 bg-transparent border-none outline-none py-4 px-3 text-[15px] md:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-medium resize-none min-h-[56px] max-h-[200px] overflow-y-auto"
               placeholder="Consult with CogniLex AI..."
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              rows={1}
+              onChange={(e) => {
+                setQuestion(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                  if (textareaRef.current) {
+                    textareaRef.current.style.height = "auto";
+                  }
+                }
+              }}
             />
             <button onClick={handleSend} className="bg-amber-600 hover:bg-amber-500 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg shadow-amber-600/30 active:scale-95 group-hover:rotate-12">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
