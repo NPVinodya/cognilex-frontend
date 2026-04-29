@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { FileText, Search, Plus, Folder, File as FileIcon, Download, MoreVertical, UploadCloud, Clock } from 'lucide-react';
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
 
 const MOCK_FOLDERS = [
     { id: '1', name: 'Active Case Files', count: 24, size: '1.2 GB', color: 'bg-blue-50 text-blue-600' },
@@ -12,9 +13,12 @@ const MOCK_FOLDERS = [
 
 // Recent documents are now fetched from the backend
 
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+
 export default function DocumentsPage() {
+    const { setIsPageLoading, setLoadingProgress } = React.useContext(DashboardContext);
     const [documents, setDocuments] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const fetchDocuments = async () => {
@@ -29,15 +33,18 @@ export default function DocumentsPage() {
                 if (data.success) {
                     setDocuments(data.documents || []);
                 }
+                setLoadingProgress(100);
+                setTimeout(() => setIsPageLoading(false), 200);
             } catch (error) {
                 console.error("Error fetching documents:", error);
-            } finally {
-                setLoading(false);
+                setIsPageLoading(false);
             }
         };
 
         fetchDocuments();
     }, []);
+
+
     return (
         <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">

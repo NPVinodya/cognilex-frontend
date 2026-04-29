@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Briefcase, CreditCard, Shield, Camera, Plus, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import axios from 'axios';
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
 
 const SETTINGS_TABS = [
     { name: 'Profile Details', icon: User, active: true },
@@ -11,9 +12,12 @@ const SETTINGS_TABS = [
     { name: 'Security', icon: Shield, active: false },
 ];
 
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+
 export default function SettingsPage() {
+    const { setIsPageLoading, setLoadingProgress } = React.useContext(DashboardContext);
     const [activeTab, setActiveTab] = useState('Profile Details');
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -57,11 +61,12 @@ export default function SettingsPage() {
                 if (response.data.success) {
                     setProfile(response.data.profile);
                 }
+                setLoadingProgress(100);
+                setTimeout(() => setIsPageLoading(false), 200);
             } catch (error) {
                 console.error('Error fetching profile:', error);
                 setMessage({ type: 'error', text: 'Failed to load profile data.' });
-            } finally {
-                setIsLoading(false);
+                setIsPageLoading(false);
             }
         };
 
@@ -76,7 +81,7 @@ export default function SettingsPage() {
             if (!userJson) return;
             const user = JSON.parse(userJson);
 
-            const response = await axios.patch(`http://localhost:8000/lawyer-dashboard/${user.id}/profile`, profile);
+            const response = await axios.patch(`${API_URL}/lawyer-dashboard/${user.id}/profile`, profile);
             if (response.data.success) {
                 setMessage({ type: 'success', text: 'Changes saved successfully!' });
                 // Update localStorage if email/name changed
@@ -100,7 +105,7 @@ export default function SettingsPage() {
 
         setIsSaving(true);
         try {
-            const response = await axios.post(`http://localhost:8000/lawyer-dashboard/password/update`, {
+            const response = await axios.post(`${API_URL}/lawyer-dashboard/password/update`, {
                 email: profile.email,
                 current_password: passwords.current,
                 new_password: passwords.new
@@ -117,14 +122,7 @@ export default function SettingsPage() {
         }
     };
 
-    if (isLoading) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-                <Loader2 className="w-10 h-10 text-[#FF9000] animate-spin" />
-                <p className="text-slate-500 font-bold animate-pulse text-lg">Loading your profile details...</p>
-            </div>
-        );
-    }
+
 
     return (
         <>
@@ -182,11 +180,17 @@ export default function SettingsPage() {
                                     {/* Avatar Upload */}
                                     <div className="flex items-center gap-6 mb-8">
                                         <div className="relative group cursor-pointer" onClick={() => setShowImageModal(true)}>
-                                            <img
-                                                src={profile.profilePhotoUrl || "https://i.pravatar.cc/150?u=lawyer"}
-                                                alt="Profile"
-                                                className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:opacity-90 transition"
-                                            />
+                                            {profile.profilePhotoUrl ? (
+                                                <img
+                                                    src={profile.profilePhotoUrl}
+                                                    alt="Profile"
+                                                    className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md group-hover:opacity-90 transition"
+                                                />
+                                            ) : (
+                                                <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-4 border-white shadow-md">
+                                                    <User className="w-10 h-10 text-slate-300" />
+                                                </div>
+                                            )}
                                             <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
                                                 <Plus className="text-white w-6 h-6" />
                                             </div>
