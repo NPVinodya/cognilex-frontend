@@ -3,6 +3,7 @@
 import Header from '@/components/layout/header';
 import Footer from '@/components/layout/footer';
 import GuestChat from '@/components/chat/GuestChat';
+import LearnTheLawButton from '@/components/ui/LearnTheLawButton';
 import { BookOpen, FileText, Users, Scale, Gavel, Shield, Award, MessageSquare } from 'lucide-react';
 
 export default function HomePage() {
@@ -14,7 +15,7 @@ export default function HomePage() {
       <main className="flex-grow">
         {/* Hero Section */}
 
-        <div className="relative bg-slate-900 py-20 lg:py-38 overflow-hidden z-0">
+        <div className="relative bg-slate-900 pt-20 pb-32 lg:pt-28 lg:pb-40 overflow-hidden z-0">
           {/* Animated Legal Icons Background */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute top-20 left-10 animate-float">
@@ -34,37 +35,58 @@ export default function HomePage() {
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <div className="inline-flex items-center justify-center p-3 bg-slate-800 rounded-full mb-6 border border-slate-700 shadow-sm">
-              <Scale className="w-8 h-8 text-amber-500" />
+            <div className="inline-flex items-center justify-center p-3 bg-slate-800 rounded-full mb-4 md:mb-6 border border-slate-700 shadow-sm">
+              <Scale className="w-6 h-6 md:w-8 md:h-8 text-amber-500" />
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white mb-4 md:mb-6 tracking-tight leading-tight">
               Your Trusted <span className="text-amber-500">Legal Assistant</span>
             </h1>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-10">
+            <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-8 md:mb-10 px-2 md:px-0">
               Get instant, authoritative answers to Sri Lankan law questions, backed by a comprehensive legal database.
             </p>
+
+            <div className="flex justify-center mt-4 md:mt-6">
+              <LearnTheLawButton />
+            </div>
           </div>
         </div>
 
 
         {/* Chat Section */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-20 mb-20">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            <div className="bg-slate-800 px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+        <div className="max-w-4xl mx-auto px-2 sm:px-6 lg:px-8 -mt-12 md:-mt-24 relative z-20 mb-20">
+          <div className="relative group overflow-hidden bg-slate-900 rounded-[2rem] md:rounded-[3rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] border border-white/20 hover:border-white/30 transition-all duration-700">
+            {/* WINDOW HEADER (No background image here) */}
+            <div className="relative z-20 bg-slate-800/80 backdrop-blur-md px-5 py-4 md:px-8 md:py-5 border-b border-white/20 flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-amber-500" /> AI Legal Consultation
+                <h3 className="text-base md:text-xl font-bold text-white flex items-center gap-2 md:gap-3">
+                  <div className="w-1.5 h-1.5 md:w-2 md:h-2 shrink-0 bg-amber-500 rounded-full animate-pulse"></div>
+                  AI Legal Consultation
                 </h3>
               </div>
-              <div className="flex gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                <div className="w-3 h-3 rounded-full bg-green-400"></div>
+              <div className="flex gap-1.5 md:gap-2.5">
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-rose-500/80 shadow-[0_0_10px_rgba(244,63,94,0.4)]"></div>
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-amber-500/80 shadow-[0_0_10px_rgba(245,158,11,0.4)]"></div>
+                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-emerald-500/80 shadow-[0_0_10px_rgba(16,185,129,0.4)]"></div>
               </div>
             </div>
-            <div className="p-6 md:p-8">
-              <GuestChat />
+
+            {/* CONTENT AREA WITH BACKGROUND IMAGE */}
+            <div className="relative">
+              {/* BACKGROUND IMAGE WITH OVERLAY */}
+              <div className="absolute inset-0 z-0">
+                <img
+                  src="/lady_justice_bg.png"
+                  alt="Legal Background"
+                  className="w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-[20s]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent"></div>
+                <div className="absolute inset-0 backdrop-blur-[1px]"></div>
+              </div>
+
+              <div className="relative z-10 p-2 md:p-4">
+                <GuestChat />
+              </div>
             </div>
           </div>
         </div>
@@ -72,7 +94,7 @@ export default function HomePage() {
         {/* Feature Cards */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition hover:-translate-y-1 duration-300">
               <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6 border border-slate-200">
                 <BookOpen className="w-6 h-6 text-amber-600" />
               </div>
@@ -82,7 +104,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition hover:-translate-y-1 duration-300">
               <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6 border border-slate-200">
                 <FileText className="w-6 h-6 text-amber-600" />
               </div>
@@ -92,7 +114,7 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+            <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition hover:-translate-y-1 duration-300">
               <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center mb-6 border border-slate-200">
                 <Users className="w-6 h-6 text-amber-600" />
               </div>

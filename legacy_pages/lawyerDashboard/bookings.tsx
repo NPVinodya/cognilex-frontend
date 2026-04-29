@@ -5,6 +5,7 @@ import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Search, Filter, 
     MoreVertical, FileText, CheckCircle2, User, CreditCard, Mail
 } from 'lucide-react';
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
 
 interface Booking {
     id: string;
@@ -19,9 +20,12 @@ interface Booking {
     status: string;
 }
 
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+
 export default function BookingsPage() {
+    const { setIsPageLoading, setLoadingProgress } = React.useContext(DashboardContext);
     const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -38,10 +42,11 @@ export default function BookingsPage() {
                 if (data.success) {
                     setBookings(data.bookings || []);
                 }
+                setLoadingProgress(100);
+                setTimeout(() => setIsPageLoading(false), 200);
             } catch (error) {
                 console.error("Error fetching bookings:", error);
-            } finally {
-                setLoading(false);
+                setIsPageLoading(false);
             }
         };
 
@@ -53,8 +58,10 @@ export default function BookingsPage() {
                (b.id || "").toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+
+
     return (
-        <div className="p-4 md:p-8">
+        <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
                 <div>
                     <h1 className="text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Bookings</h1>
@@ -150,6 +157,6 @@ export default function BookingsPage() {
                     </table>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

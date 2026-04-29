@@ -69,7 +69,7 @@ export default function Header() {
       dropdown: [
         { name: 'Find Lawyers', path: '/lawyer' },
         { name: 'AI Legal Chat', path: '/chat' },
-        { name: 'Appointments', path: '/appointmentManage' },
+        { name: 'My Appointments', path: '/my-appointments' },
       ]
     },
     { name: 'Lawyers', icon: Users, path: '/lawyer' },
@@ -83,7 +83,7 @@ export default function Header() {
           {/* Logo */}
           <button
             onClick={() => router.push('/')}
-            className="flex items-center space-x-3 group transition-transform hover:scale-105 duration-300"
+            className="flex items-center space-x-3 group transition-transform hover:scale-105 duration-300 cursor-pointer"
           >
             <div className="bg-white p-2.5 rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:rotate-6">
               <Scale className="w-8 h-8 text-amber-600" />
@@ -102,7 +102,7 @@ export default function Header() {
                   <button
                     onMouseEnter={() => setServicesOpen(true)}
                     onMouseLeave={() => setServicesOpen(false)}
-                    className="flex items-center space-x-2 px-4 py-2.5 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium group"
+                    className="flex items-center space-x-2 px-4 py-2.5 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium group cursor-pointer"
                   >
                     <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                     <span>{item.name}</span>
@@ -112,20 +112,22 @@ export default function Header() {
                     <div
                       onMouseEnter={() => setServicesOpen(true)}
                       onMouseLeave={() => setServicesOpen(false)}
-                      className="absolute top-full mt-2 w-48 bg-white rounded-xl shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-200"
+                      className="absolute top-full left-0 pt-2 w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
                     >
-                      {item.dropdown.map((dropItem) => (
-                        <button
-                          key={dropItem.name}
-                          onClick={() => {
-                            router.push(dropItem.path);
-                            setServicesOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-2.5 transition-colors duration-200 font-medium ${pathname === dropItem.path ? 'bg-amber-50 text-amber-700' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
-                        >
-                          {dropItem.name}
-                        </button>
-                      ))}
+                      <div className="bg-white rounded-xl shadow-2xl py-2 border border-slate-100">
+                        {item.dropdown.map((dropItem) => (
+                          <button
+                            key={dropItem.name}
+                            onClick={() => {
+                              router.push(dropItem.path);
+                              setServicesOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2.5 transition-colors duration-200 font-medium cursor-pointer ${pathname === dropItem.path ? 'bg-amber-50 text-amber-700' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-700'}`}
+                          >
+                            {dropItem.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -133,7 +135,7 @@ export default function Header() {
                 <button
                   key={item.name}
                   onClick={() => router.push(item.path)}
-                  className="flex items-center space-x-2 px-4 py-2.5 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium group"
+                  className="flex items-center space-x-2 px-4 py-2.5 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium group cursor-pointer"
                 >
                   <item.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   <span>{item.name}</span>
@@ -156,7 +158,7 @@ export default function Header() {
                 </div>
                 <button
                   onClick={logout}
-                  className="flex items-center space-x-2 px-5 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-105"
+                  className="flex items-center space-x-2 px-5 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl hover:scale-105 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
@@ -185,7 +187,7 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-white hover:bg-white/20 rounded-lg transition-all duration-300"
+            className="lg:hidden p-2 text-white hover:bg-white/20 rounded-lg transition-all duration-300 cursor-pointer"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -200,7 +202,7 @@ export default function Header() {
                   <div key={item.name} className="space-y-2">
                     <button
                       onClick={() => setServicesOpen(!servicesOpen)}
-                      className="flex items-center justify-between w-full px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium"
+                      className="flex items-center justify-between w-full px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium cursor-pointer"
                     >
                       <div className="flex items-center space-x-2">
                         <item.icon className="w-5 h-5" />
@@ -217,7 +219,7 @@ export default function Header() {
                               router.push(dropItem.path);
                               setMobileMenuOpen(false);
                             }}
-                            className="block w-full text-left px-4 py-2.5 text-white/90 hover:bg-white/20 rounded-lg transition-all duration-200"
+                            className="block w-full text-left px-4 py-2.5 text-white/90 hover:bg-white/20 rounded-lg transition-all duration-200 cursor-pointer"
                           >
                             {dropItem.name}
                           </button>
@@ -232,7 +234,7 @@ export default function Header() {
                       router.push(item.path);
                       setMobileMenuOpen(false);
                     }}
-                    className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium"
+                    className="flex items-center space-x-2 px-4 py-3 text-white hover:bg-white/20 rounded-lg transition-all duration-300 font-medium cursor-pointer"
                   >
                     <item.icon className="w-5 h-5" />
                     <span>{item.name}</span>
@@ -256,7 +258,7 @@ export default function Header() {
                         logout();
                         setMobileMenuOpen(false);
                       }}
-                      className="flex items-center space-x-2 w-full px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 font-medium"
+                      className="flex items-center space-x-2 w-full px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 font-medium cursor-pointer"
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Logout</span>
@@ -269,7 +271,7 @@ export default function Header() {
                         router.push('/login');
                         setMobileMenuOpen(false);
                       }}
-                      className="flex items-center space-x-2 w-full px-4 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all duration-300 font-medium"
+                      className="flex items-center space-x-2 w-full px-4 py-3 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-all duration-300 font-medium cursor-pointer"
                     >
                       <LogIn className="w-5 h-5" />
                       <span>Login</span>
@@ -279,7 +281,7 @@ export default function Header() {
                         router.push('/register');
                         setMobileMenuOpen(false);
                       }}
-                      className="flex items-center space-x-2 w-full px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-300 font-medium"
+                      className="flex items-center space-x-2 w-full px-4 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-all duration-300 font-medium cursor-pointer"
                     >
                       <UserPlus className="w-5 h-5" />
                       <span>Register</span>

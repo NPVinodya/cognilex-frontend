@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
+import {
   ShieldCheck, UserPlus, Trash2, Mail, User, Shield, X, Lock, AlertCircle, CheckCircle, Info
 } from 'lucide-react';
 
-import { API_BASE_URL } from '@/lib/constants';
 
-const API_URL = API_BASE_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function AdminManagement() {
   const [loading, setLoading] = useState(true);
@@ -17,7 +16,7 @@ export default function AdminManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   const [currentAdmin, setCurrentAdmin] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -71,7 +70,7 @@ export default function AdminManagement() {
       setSuccess('New administrator added successfully!');
       setFormData({ name: '', email: '', password: '' });
       fetchAdmins();
-      
+
       setTimeout(() => {
         setIsModalOpen(false);
         setSuccess('');
@@ -124,12 +123,12 @@ export default function AdminManagement() {
           <h1 className="text-3xl font-bold tracking-tight">Admin Management</h1>
           <p className="text-base text-slate-500 dark:text-slate-400 font-medium">Control and audit platform administrative access</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="px-6 py-3.5 bg-[#181B25] text-white rounded-2xl hover:bg-slate-800 transition-all font-bold flex items-center gap-2 shadow-xl shadow-slate-900/10 active:scale-95 group"
         >
-           <UserPlus className="w-5 h-5 text-[#FF9000] group-hover:scale-110 transition-transform" /> 
-           Add New Admin
+          <UserPlus className="w-5 h-5 text-[#FF9000] group-hover:scale-110 transition-transform" />
+          Add New Admin
         </button>
       </div>
 
@@ -157,7 +156,7 @@ export default function AdminManagement() {
                   <p className="text-sm font-bold text-slate-500 flex items-center gap-2">
                     <Mail className="w-4 h-4 text-slate-400" /> {admin.email}
                   </p>
-                  
+
                   {/* Tracking Creator */}
                   <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
                     <Info className="w-3.5 h-3.5 text-slate-400" />
@@ -168,9 +167,9 @@ export default function AdminManagement() {
 
                   <div className="pt-4 flex items-center justify-between border-t border-slate-50">
                     <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">
-                        Access ID: {admin.id?.slice(-8) || 'N/A'}
+                      Access ID: {admin.id?.slice(-8) || 'N/A'}
                     </span>
-                    <button 
+                    <button
                       onClick={() => handleDeleteAdmin(admin.id)}
                       className="p-3 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all active:scale-90"
                       title="Revoke Admin Roles"
@@ -221,7 +220,7 @@ export default function AdminManagement() {
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">Authorize new platform admin</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-xl transition shadow-sm border border-transparent hover:border-slate-100"
               >
@@ -245,8 +244,8 @@ export default function AdminManagement() {
 
               <div className="space-y-4">
                 <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100 mb-4">
-                    <p className="text-[10px] font-black text-orange-600 uppercase tracking-wider mb-1">Authorizing Agent (You)</p>
-                    <p className="text-sm font-bold text-slate-700">{currentAdmin?.name || 'Administrator'} ({currentAdmin?.email})</p>
+                  <p className="text-[10px] font-black text-orange-600 uppercase tracking-wider mb-1">Authorizing Agent (You)</p>
+                  <p className="text-sm font-bold text-slate-700">{currentAdmin?.name || 'Administrator'} ({currentAdmin?.email})</p>
                 </div>
 
                 <div>
@@ -257,7 +256,7 @@ export default function AdminManagement() {
                       type="text"
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-[#FF9000] focus:ring-4 focus:ring-[#FF9000]/10 transition font-bold text-slate-900 placeholder:text-slate-300"
                       placeholder="e.g., Alexander Maxwell"
                     />
@@ -272,7 +271,7 @@ export default function AdminManagement() {
                       type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-[#FF9000] focus:ring-4 focus:ring-[#FF9000]/10 transition font-bold text-slate-900 placeholder:text-slate-300"
                       placeholder="admin@cognilex.ai"
                     />
@@ -287,7 +286,7 @@ export default function AdminManagement() {
                       type="password"
                       required
                       value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-[#FF9000] focus:ring-4 focus:ring-[#FF9000]/10 transition font-bold text-slate-900 placeholder:text-slate-300"
                       placeholder="••••••••••••"
                       minLength={6}

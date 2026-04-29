@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-    TrendingUp, DollarSign, Users, Briefcase, 
-    Calendar, Download, Activity, PieChart,
-    ChevronRight, ArrowUpRight, CheckCircle2, Star
+    Activity, TrendingUp, Users, DollarSign, Calendar, ChevronDown, Download, Filter, 
+    ArrowUpRight, ArrowDownRight, Clock, Plus, Star, Briefcase, ChevronRight, CheckCircle2,
+    PieChart
 } from 'lucide-react';
+import { DashboardContext } from '@/app/lawyerDashboard/layout';
 
 interface MonthlyData {
     month: string;
@@ -21,8 +22,11 @@ interface ServiceData {
     revenue: number;
 }
 
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+
 export default function AnalyticsPage() {
-    const [loading, setLoading] = useState(true);
+    const { setIsPageLoading, setLoadingProgress } = React.useContext(DashboardContext);
+    const [loading, setLoading] = useState(false);
     const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
     const [services, setServices] = useState<ServiceData[]>([]);
     const [stats, setStats] = useState<any>(null);
@@ -30,7 +34,6 @@ export default function AnalyticsPage() {
 
     useEffect(() => {
         const fetchAnalytics = async () => {
-            setLoading(true);
             try {
                 const storedUser = localStorage.getItem("user");
                 if (!storedUser) return;
@@ -53,10 +56,11 @@ export default function AnalyticsPage() {
                 if (statsData.success) {
                     setStats(statsData.stats || statsData);
                 }
+                setLoadingProgress(100);
+                setTimeout(() => setIsPageLoading(false), 200);
             } catch (error) {
                 console.error("Error fetching analytics:", error);
-            } finally {
-                setLoading(false);
+                setIsPageLoading(false);
             }
         };
         fetchAnalytics();
@@ -82,13 +86,7 @@ export default function AnalyticsPage() {
         document.body.removeChild(link);
     };
 
-    if (loading) {
-        return (
-            <div className="flex min-h-[60vh] items-center justify-center">
-                <div className="w-16 h-16 border-4 border-orange-100 border-t-[#FF9000] rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+
 
     const maxNet = monthlyData.length > 0 ? Math.max(...monthlyData.map(d => d.net)) : 1000;
 
@@ -133,7 +131,7 @@ export default function AnalyticsPage() {
                             <DollarSign className="w-6 h-6" />
                         </div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Gross Revenue</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
+                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
                             LKR {(stats?.totalEarnings || 0).toLocaleString()}
                         </h3>
                         <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-50 w-fit px-3 py-1 rounded-lg">
@@ -150,7 +148,7 @@ export default function AnalyticsPage() {
                             <TrendingUp className="w-6 h-6" />
                         </div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Net Earnings</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
+                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
                             LKR {(stats?.netEarnings || 0).toLocaleString()}
                         </h3>
                         <div className="flex items-center gap-2 text-xs font-bold text-[#FF9000] bg-orange-50 w-fit px-3 py-1 rounded-lg">
@@ -167,7 +165,7 @@ export default function AnalyticsPage() {
                             <Activity className="w-6 h-6" />
                         </div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Platform Fees</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
+                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
                             LKR {(stats?.platformFees || 0).toLocaleString()}
                         </h3>
                         <p className="text-[12px] text-slate-500 font-medium">LKR 200 per booking</p>
@@ -182,7 +180,7 @@ export default function AnalyticsPage() {
                             <Users className="w-6 h-6" />
                         </div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Active Clients</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
+                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
                             {(stats?.activeClients || 0).toLocaleString()}
                         </h3>
                         <div className="flex items-center gap-2 text-xs font-bold text-blue-600 bg-blue-50 w-fit px-3 py-1 rounded-lg">

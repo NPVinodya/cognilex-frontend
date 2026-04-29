@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { ChangeEvent, useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import SettingsModal from "@/components/chat/SettingsModal";
 import CorporatePlanModal from "@/components/chat/CorporatePlanModal";
@@ -17,18 +17,43 @@ type Message = {
   mode?: string;
 };
 
+type ChatMode = "legal" | "research";
+
 /** Resolve user_id from localStorage — used as RAG session key */
 function resolveUserId(): string {
   try {
-    return JSON.parse(localStorage.getItem("user") ?? "{}")?.email || "guest_user";
+    const stored = localStorage.getItem("user");
+    if (!stored || stored === "undefined" || stored === "null") return "guest_user";
+    const p = JSON.parse(stored);
+    return p.email || p.$id || "guest_user";
   } catch {
     return "guest_user";
   }
 }
 
-export default function CogniLexAI() {
+function detectChatMode(text: string): ChatMode {
+  const lower = text.toLowerCase();
+  const researchHits = [
+    "case", "cases", "judgment", "judgement", "judgments", "ruling",
+    "verdict", "court", "precedent", "plaintiff", "defendant",
+    "appeal", "appellant", "respondent", "held", "justice", "bench",
+    "නඩුව", "තීරණය", "උසාවිය", "අභියාචනය", "வழக்கு", "தீர்ப்பு", "நீதிமன்றம்",
+  ].filter(k => lower.indexOf(k) !== -1).length;
+  const legalHits = [
+    "act", "acts", "section", "statute", "law", "regulation", "ordinance",
+    "provision", "clause", "amendment", "article", "schedule", "part",
+    "chapter", "subsection", "පනත", "වගන්ති", "නීතිය", "රෙගුලාසි",
+    "சட்டம்", "பிரிவு", "ஒழுங்குமுறை",
+  ].filter(k => lower.indexOf(k) !== -1).length;
+  return researchHits > legalHits ? "research" : "legal";
+}
+
+export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: string; userId?: string }) {
   const router = useRouter();
+  const chatApiBase = `${process.env.NEXT_PUBLIC_API_URL}`;
+  const chatApiUrl = (path: string) => `${chatApiBase}/chat${path}`;
   const [question, setQuestion] = useState("");
+  const [selectedMode, setSelectedMode] = useState<ChatMode>("legal");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -38,7 +63,7 @@ export default function CogniLexAI() {
   const [activeSettingsTab, setActiveSettingsTab] = useState("General");
   const [showCorporatePlan, setShowCorporatePlan] = useState(false);
   const [showSupportDesk, setShowSupportDesk] = useState(false);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(sessionId || null);
   const [sessions, setSessions] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<{
     name: string; email: string; userrole: string;
@@ -51,7 +76,7 @@ export default function CogniLexAI() {
   const renameSession = async (sid: string, newTitle: string) => {
     if (!newTitle.trim()) return setEditingSessionId(null);
     try {
-      const res = await fetch(`/api/chat?session_id=${sid}&title=${encodeURIComponent(newTitle)}`, {
+      const res = await fetch(chatApiUrl(`/session/${sid}/title?title=${encodeURIComponent(newTitle)}`), {
         method: "PATCH"
       });
       if (res.ok) {
@@ -65,13 +90,14 @@ export default function CogniLexAI() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // ── Voice ──────────────────────────────────────────────────────────────────
   const speak = (text: string) => {
     if (!isVoiceOn) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    
+
     // Auto-detect language based on character ranges
     if (/[\u0D80-\u0DFF]/.test(text)) {
       u.lang = "si-LK"; // Sinhala
@@ -80,7 +106,7 @@ export default function CogniLexAI() {
     } else {
       u.lang = "en-US"; // Default English
     }
-    
+
     window.speechSynthesis.speak(u);
   };
   const stopSpeaking = () => window.speechSynthesis.cancel();
@@ -111,6 +137,7 @@ export default function CogniLexAI() {
     } catch { /* ignore */ }
   }, []);
 
+
   const getUserInitials = (name?: string, email?: string) => {
     const src = name || email || "User";
     const pts = src.trim().split(/\s+/);
@@ -134,7 +161,7 @@ export default function CogniLexAI() {
   const fetchSessions = async () => {
     try {
       const email = resolveUserId();
-      const res = await fetch(`/api/chat?user_id=${email}`);
+      const res = await fetch(chatApiUrl(`/sessions?user_id=${encodeURIComponent(email)}`));
       const data = await res.json();
       if (res.ok) setSessions(data.sessions || []);
     } catch (e) { console.error("Failed to fetch sessions:", e); }
@@ -143,9 +170,9 @@ export default function CogniLexAI() {
   const loadSessionMessages = async (sid: string) => {
     setLoading(true);
     setActiveSessionId(sid);
-    if(window.innerWidth < 768) setSidebarOpen(false);
+    if (window.innerWidth < 768) setSidebarOpen(false);
     try {
-      const res = await fetch(`/api/chat?session_id=${sid}`);
+      const res = await fetch(chatApiUrl(`/history?session_id=${encodeURIComponent(sid)}`));
       const data = await res.json();
       if (res.ok && data.messages) {
         setMessages(data.messages.map((m: any) => ({
@@ -159,28 +186,48 @@ export default function CogniLexAI() {
       } else {
         setMessages([]);
       }
-    } catch (e) { 
+    } catch (e) {
       console.error("Failed to load history:", e);
       setMessages([]);
     }
     finally { setLoading(false); }
   };
 
+  // Sync with URL ID changes
+  useEffect(() => {
+    if (sessionId && sessionId !== activeSessionId) {
+      loadSessionMessages(sessionId);
+    } else if (!sessionId && activeSessionId) {
+      // If we moved from a session to /chat (new chat)
+      setMessages([]);
+      setActiveSessionId(null);
+    }
+  }, [sessionId]);
+
+  // Initial load if sessionId is present
+  useEffect(() => {
+    if (sessionId) {
+      loadSessionMessages(sessionId);
+    }
+  }, []);
+
   useEffect(() => {
     const email = resolveUserId();
     if (email && email !== "guest_user") fetchSessions();
   }, []);
 
-  // ── Core API call — Browser → /api/chat → REST API /chat/ask → RAG /ask ───
+  // ── Core API call — Browser → FastAPI /chat/ask → chat_controller → ragtwo ──
   const callChatAPI = async (q: string): Promise<Message> => {
     const currentSid = activeSessionId;
-    const res = await fetch("/api/chat", {
+    const parsedMode = selectedMode;
+    const res = await fetch(chatApiUrl("/ask"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        question: q, 
+      body: JSON.stringify({
+        question: q,
         user_id: resolveUserId(),
-        session_id: currentSid 
+        session_id: currentSid,
+        mode: parsedMode,
       }),
     });
     const data = await res.json();
@@ -189,9 +236,10 @@ export default function CogniLexAI() {
     // If backend returned a new session_id, update our state
     if (data.session_id && data.session_id !== currentSid) {
       setActiveSessionId(data.session_id);
+      router.push(`/${userId}/chat/${data.session_id}`);
       // Pre-emptively add to list for instant UI feedback
-      const newSess = { 
-        id: data.session_id, 
+      const newSess = {
+        id: data.session_id,
         title: q.slice(0, 30) + (q.length > 30 ? "..." : ""),
         updated_at: new Date().toISOString()
       };
@@ -228,7 +276,7 @@ export default function CogniLexAI() {
   };
 
   // ── PDF upload — asks RAG to describe the file ────────────────────────────
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const q = `📁 Please summarize and analyse the legal document: ${file.name}`;
@@ -252,7 +300,7 @@ export default function CogniLexAI() {
 
       {/* MOBILE SIDEBAR OVERLAY */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden animate-in fade-in duration-300"
           onClick={() => setSidebarOpen(false)}
         />
@@ -267,19 +315,25 @@ export default function CogniLexAI() {
       `}>
         {/* FIXED TOP SECTION */}
         <div className="p-6 border-b border-slate-200/50 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-md">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="bg-white p-2.5 rounded-xl shadow-lg border border-slate-200 dark:border-white/10">
+          <div
+            onClick={() => router.push("/")}
+            className="flex items-center gap-3 mb-8 cursor-pointer group"
+          >
+            <div className="bg-white p-2.5 rounded-xl shadow-lg border border-slate-200 dark:border-white/10 group-hover:scale-105 transition-transform">
               <Scale className="w-7 h-7 text-amber-600" />
             </div>
-            <h1 className="text-2xl font-playfair font-bold tracking-tight bg-gradient-to-r from-amber-600 to-amber-800 dark:from-amber-100 dark:to-amber-400 bg-clip-text text-transparent">CogniLex AI</h1>
+            <h1 className="text-2xl font-playfair font-bold tracking-tight bg-gradient-to-r from-amber-600 to-amber-800 dark:from-amber-100 dark:to-amber-400 bg-clip-text text-transparent group-hover:opacity-80 transition-opacity">
+              CogniLex AI
+            </h1>
           </div>
 
-          <button 
-            onClick={() => { 
-              setMessages([]); 
+          <button
+            onClick={() => {
+              setMessages([]);
               setActiveSessionId(null);
-              if(window.innerWidth < 768) setSidebarOpen(false); 
-            }} 
+              router.push(`/${userId}/chat`);
+              if (window.innerWidth < 768) setSidebarOpen(false);
+            }}
             className="w-full flex items-center justify-center gap-2 py-3.5 bg-white dark:bg-amber-600/10 border border-slate-200 dark:border-amber-500/20 rounded-2xl hover:bg-slate-50 dark:hover:bg-amber-600/20 transition-all duration-300 text-sm font-bold text-slate-800 dark:text-amber-400 shadow-sm hover:shadow-md"
           >
             <span className="text-xl">+</span> New Consultation
@@ -297,12 +351,12 @@ export default function CogniLexAI() {
             <div className="space-y-2">
               {sessions.length > 0 ? (
                 sessions.map((s: any) => (
-                  <div 
-                    key={s.id} 
+                  <div
+                    key={s.id}
                     className={`
                       p-3 rounded-xl cursor-pointer transition-all duration-200 border text-xs font-bold flex items-center justify-between group/item
-                      ${activeSessionId === s.id 
-                        ? "bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400" 
+                      ${activeSessionId === s.id
+                        ? "bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400"
                         : "border-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400"}
                     `}
                   >
@@ -317,10 +371,10 @@ export default function CogniLexAI() {
                       />
                     ) : (
                       <>
-                        <div className="truncate flex-1" onClick={() => loadSessionMessages(s.id)}>
+                        <div className="truncate flex-1" onClick={() => router.push(`/${userId}/chat/${s.id}`)}>
                           <span className="mr-2">📄</span> {s.title || "Untitled Legal Chat"}
                         </div>
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditingSessionId(s.id);
@@ -420,19 +474,49 @@ export default function CogniLexAI() {
         {showSupportDesk && <SupportDeskModal onClose={() => setShowSupportDesk(false)} />}
 
         <header className="h-16 md:h-20 flex items-center justify-between px-4 md:px-8 border-b border-slate-200 dark:border-slate-800/50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/40 z-10">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setSidebarOpen(!isSidebarOpen)} 
+          <div className="flex items-center gap-3 md:gap-4">
+            <button
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
               className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all text-slate-500 dark:text-slate-400 border border-transparent hover:border-slate-200 dark:hover:border-white/10"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
+
+            {/* ── MODE TOGGLE SWITCH ────────────────────────────────────────────── */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
+              <button
+                id="mode-legal-btn"
+                onClick={() => setSelectedMode("legal")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                  selectedMode === "legal"
+                    ? "bg-amber-600 text-white shadow-md shadow-amber-600/30"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                }`}
+                title="Legal mode: answers from Acts & Statutes"
+              >
+                <span>⚖️</span>
+                <span className="hidden sm:inline">Legal</span>
+              </button>
+              <button
+                id="mode-research-btn"
+                onClick={() => setSelectedMode("research")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${
+                  selectedMode === "research"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                }`}
+                title="Research mode: answers from Case Law & Judgements"
+              >
+                <span>📚</span>
+                <span className="hidden sm:inline">Research</span>
+              </button>
+            </div>
           </div>
-          
+
           <div className="flex items-center gap-2 md:gap-4">
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700/50">
-              <button 
-                onClick={() => setIsVoiceOn(!isVoiceOn)} 
+              <button
+                onClick={() => setIsVoiceOn(!isVoiceOn)}
                 className={`p-2 rounded-lg transition-all ${isVoiceOn ? "bg-white dark:bg-slate-700 text-amber-500 shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
                 title={isVoiceOn ? "Disable Voice Response" : "Enable Voice Response"}
               >
@@ -454,9 +538,9 @@ export default function CogniLexAI() {
               <div className="bg-white p-4 rounded-[2rem] shadow-2xl mb-8 border border-slate-200 dark:border-white/10">
                 <Scale className="w-12 h-12 text-amber-600" />
               </div>
-              <h2 className="text-4xl md:text-5xl font-playfair font-bold text-slate-900 dark:text-white mb-4 tracking-tight text-center">CogniLex Legal Assistant</h2>
+              <h2 className="text-4xl font-playfair font-bold text-slate-900 dark:text-white mb-4 tracking-tight text-center">CogniLex Legal Assistant</h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base max-w-lg text-center leading-relaxed font-medium">
-                Advanced AI intelligence specialized in the legal landscape of Sri Lanka. 
+                Advanced AI intelligence specialized in the legal landscape of Sri Lanka.
                 Formulate your inquiry below.
               </p>
             </div>
@@ -466,8 +550,8 @@ export default function CogniLexAI() {
             <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"} animate-in slide-in-from-bottom-6 duration-500`}>
               <div className={`
                 max-w-[92%] md:max-w-[85%] px-5 py-2.5 rounded-2xl shadow-lg relative overflow-hidden font-roboto
-                ${msg.role === "user" 
-                  ? "bg-amber-600 text-white rounded-br-none font-medium shadow-amber-600/10" 
+                ${msg.role === "user"
+                  ? "bg-amber-600 text-white rounded-br-none font-medium shadow-amber-600/10"
                   : "bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-white/10 rounded-bl-none shadow-slate-200 dark:shadow-none"}
               `}>
                 {msg.role === "bot" && <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-amber-500 via-amber-600 to-amber-800"></div>}
@@ -488,27 +572,13 @@ export default function CogniLexAI() {
                     </ReactMarkdown>
                   )}
                 </div>
-
-                {/* RAG Sources */}
-                {msg.role === "bot" && msg.sources && msg.sources.length > 0 && (
-                  <div className="mt-6 pl-3 md:pl-4 border-t border-slate-200 dark:border-white/10 pt-5">
-                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3 flex items-center gap-2">
-                      <span className="w-4 h-px bg-slate-300 dark:bg-slate-700"></span> 📚 Research Material
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {msg.sources.map((src, si) => (
-                        <span key={si} className="text-[10px] md:text-[11px] text-amber-700 dark:text-amber-300 bg-amber-500/10 dark:bg-amber-400/10 rounded-full px-4 py-1.5 font-bold border border-amber-500/20">{src}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Meta row */}
               <div className="flex items-center gap-4 mt-3 px-6">
                 <span className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em]">{msg.time}</span>
                 {msg.role === "bot" && msg.latency && <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">⚡ {msg.latency}</span>}
-                {msg.role === "bot" && msg.mode && <span className="text-[10px] text-amber-600/80 dark:text-amber-400/70 font-bold italic truncate max-w-[180px] md:max-w-[300px]">{msg.mode}</span>}
+
               </div>
             </div>
           ))}
@@ -531,12 +601,26 @@ export default function CogniLexAI() {
             <button onClick={startListening} className="p-4 text-slate-400 hover:text-amber-500 transition-all hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full active:scale-90">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>
             </button>
-            <input
-              className="flex-1 bg-transparent border-none outline-none py-4 px-3 text-[15px] md:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-medium"
+            <textarea
+              ref={textareaRef}
+              className="flex-1 bg-transparent border-none outline-none py-4 px-3 text-[15px] md:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-medium resize-none min-h-[56px] max-h-[200px] overflow-y-auto"
               placeholder="Consult with CogniLex AI..."
               value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              rows={1}
+              onChange={(e) => {
+                setQuestion(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                  if (textareaRef.current) {
+                    textareaRef.current.style.height = "auto";
+                  }
+                }
+              }}
             />
             <button onClick={handleSend} className="bg-amber-600 hover:bg-amber-500 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg shadow-amber-600/30 active:scale-95 group-hover:rotate-12">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>

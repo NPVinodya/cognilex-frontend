@@ -5,28 +5,61 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Scale, Calendar as CalendarIcon, Users, Briefcase, FileText,
-  MessageSquare, TrendingUp, Settings, LayoutDashboard, Search, Bell, LogOut, Sparkles
+  MessageSquare, TrendingUp, Settings, LayoutDashboard, Search, Bell, LogOut, Sparkles, User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
 
 const SIDEBAR_NAV = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/lawyerDashboard/dashboard', badge: null },
-  { name: 'Appointments', icon: CalendarIcon, path: '/lawyerDashboard/appointments', badge: '3' },
+  { name: 'Appointments', icon: CalendarIcon, path: '/lawyerDashboard/appointments', badge: null },
   { name: 'Bookings', icon: Briefcase, path: '/lawyerDashboard/bookings', badge: null },
   { name: 'Clients', icon: Users, path: '/lawyerDashboard/clients', badge: null },
   { name: 'Documents', icon: FileText, path: '/lawyerDashboard/documents', badge: null },
-  { name: 'Messages', icon: MessageSquare, path: '/lawyerDashboard/messages', badge: '5' },
+  { name: 'Messages', icon: MessageSquare, path: '/lawyerDashboard/messages', badge: null },
   { name: 'Analytics', icon: TrendingUp, path: '/lawyerDashboard/analytics', badge: null },
   { name: 'Settings', icon: Settings, path: '/lawyerDashboard/settings', badge: null },
 ];
+
+interface DashboardContextType {
+  setIsPageLoading: (loading: boolean) => void;
+  setLoadingProgress: (progress: number) => void;
+}
+
+export const DashboardContext = React.createContext<DashboardContextType>({
+  setIsPageLoading: () => {},
+  setLoadingProgress: () => {},
+});
 
 export default function LawyerDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [lawyerProfile, setLawyerProfile] = React.useState({
     name: 'Loading...',
     title: 'Lawyer',
-    avatar: 'https://i.pravatar.cc/150?u=lawyer'
+    avatar: ''
   });
+
+  const [isPageLoading, setIsPageLoading] = React.useState(true);
+  const [loadingProgress, setLoadingProgress] = React.useState(0);
+
+  // Initial navigation loading start
+  React.useEffect(() => {
+    setIsPageLoading(true);
+    setLoadingProgress(10);
+    
+    // Slow progress simulation while waiting for actual data
+    const timer = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(timer);
+          return 90;
+        }
+        return prev + 5;
+      });
+    }, 200);
+
+    return () => clearInterval(timer);
+  }, [pathname]);
 
   React.useEffect(() => {
     const fetchLawyerInfo = async () => {
@@ -40,8 +73,10 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
         const user = JSON.parse(userJson);
         setLawyerProfile(prev => ({ ...prev, name: user.name || 'Lawyer' }));
 
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
         // Fetch additional profile info if available
-        const response = await fetch(`http://localhost:8000/lawyer-dashboard/${user.id}/profile`);
+        const response = await fetch(`${API_URL}/lawyer-dashboard/${user.id}/profile`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.profile) {
@@ -106,7 +141,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
 
         <div className="p-4 mt-auto border-t border-white/5 space-y-2">
           {/* AI Chat Button */}
-          <Link 
+          <Link
             href="/chat"
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500/10 to-orange-600/5 text-[#FF9000] border border-orange-500/10 hover:border-orange-500/30 transition-all font-bold w-full active:scale-95 group mb-1 shadow-sm"
           >
@@ -115,13 +150,13 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
           </Link>
 
           {/* Logout Button */}
-          <button 
+          <button
             onClick={() => {
-                if (confirm('Are you sure you want to log out?')) {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = '/login'; // Lawyer login is usually at /login
-                }
+              if (confirm('Are you sure you want to log out?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/login'; // Lawyer login is usually at /login
+              }
             }}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-all font-bold w-full active:scale-95 group mb-2"
           >
@@ -130,7 +165,13 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
           </button>
 
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer transition">
-            <img src={lawyerProfile.avatar} alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#2A2E3D]" />
+            {lawyerProfile.avatar ? (
+              <img src={lawyerProfile.avatar} alt="Avatar" className="h-10 w-10 rounded-full object-cover border-2 border-[#2A2E3D]" />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-[#2A2E3D]">
+                <User className="h-5 w-5 text-slate-400" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{lawyerProfile.name}</p>
               <p className="text-xs text-slate-500 truncate">{lawyerProfile.title}</p>
@@ -164,7 +205,12 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
 
         {/* Dynamic Page Content */}
         <div className="flex-1 overflow-y-auto p-8 lg:p-10">
-          {children}
+          <DashboardContext.Provider value={{ setIsPageLoading, setLoadingProgress }}>
+            {isPageLoading && <DashboardLoading progress={loadingProgress} />}
+            <div className={isPageLoading ? 'hidden' : 'block'}>
+              {children}
+            </div>
+          </DashboardContext.Provider>
         </div>
       </main>
     </div>

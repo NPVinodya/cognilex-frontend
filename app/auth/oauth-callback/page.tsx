@@ -83,8 +83,8 @@ export default function OAuthCallbackPage() {
           console.warn('JWT creation failed, proceeding with session', jwtError);
         }
 
-        // Redirect to dashboard
-        router.push('/chat');
+        // Redirect to user-scoped chat
+        router.push(`/${appwriteUser.$id}/chat`);
       } catch (err: any) {
         const message = err?.message || 'OAuth authentication failed. Redirecting to login...';
         console.error('OAuth callback error:', err);
