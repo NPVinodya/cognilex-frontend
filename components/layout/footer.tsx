@@ -1,12 +1,16 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Scale, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram, Youtube, ArrowRight, Heart } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getChatHref } from '@/lib/user';
 
 export default function Footer() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [chatHref, setChatHref] = useState('/login');
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -17,15 +21,16 @@ export default function Footer() {
     };
 
     checkAuth();
+    setChatHref(getChatHref());
     window.addEventListener("storage", checkAuth);
     return () => window.removeEventListener("storage", checkAuth);
-  }, []);
+  }, [pathname]);
 
   const quickLinks = [
     { name: 'Home', path: '/' },
     { name: 'About Us', path: '/about' },
     { name: 'Find Lawyers', path: '/appointmentFind' },
-    { name: 'AI Legal Chat', path: '/chat' },
+    { name: 'AI Legal Chat', path: chatHref },
     { name: 'Appointments', path: '/appointmentManage' },
   ];
 
