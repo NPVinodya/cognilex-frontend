@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 
 import MessageBubble from './MessageBubble';
 import { MessageSquare, Send, FileText, Scale, Gavel, Shield } from 'lucide-react';
-import { GUEST_MESSAGE_LIMIT } from '@/lib/constants';
+import { GUEST_MESSAGE_LIMIT, API_BASE_URL } from '@/lib/constants';
+import type { Message } from '@/lib/types';
 
 export default function GuestChat() {
   const router = useRouter();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [guestMessageCount, setGuestMessageCount] = useState(0);
   const messageListRef = useRef<HTMLDivElement>(null);
@@ -32,11 +33,13 @@ export default function GuestChat() {
   const handleSend = async () => {
     if (!input.trim() || shouldPromptRegistration) return;
 
+    const userQuestion = input.trim();
+
     // Add user message to UI
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now().toString(),
-      text: input.trim(),
-      isUser: true,
+      text: userQuestion,
+      sender: 'user',
       timestamp: new Date(),
     };
 
@@ -45,17 +48,46 @@ export default function GuestChat() {
     setInput('');
     setLoading(true);
 
-    // Simulate response (replace with actual API call later)
-    setTimeout(() => {
-      const botMessage = {
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/guest_mode`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: userQuestion,
+          user_id: 'guest_user'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to get response');
+      }
+
+      const data = await response.json();
+      
+      const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'This is a demo response. Connect to chatAPI to get actual responses.',
-        isUser: false,
+        text: data.answer,
+        sender: 'bot',
         timestamp: new Date(),
       };
+      
       setMessages(prev => [...prev, botMessage]);
+      
+    } catch (err: any) {
+      console.error('Guest mode error:', err);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: err.message || 'An error occurred. Please try again later.',
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

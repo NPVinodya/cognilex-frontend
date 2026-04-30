@@ -13,7 +13,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ name?: string } | null>(null);
+  const [user, setUser] = useState<{ name?: string, userrole?: string } | null>(null);
   const [chatHref, setChatHref] = useState('/login');
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export default function Header() {
       const authed = localStorage.getItem("isAuthenticated") === "true";
 
       setIsAuthenticated(authed);
-      setUser(rawUser ? (JSON.parse(rawUser) as { name?: string }) : null);
+      setUser(rawUser ? (JSON.parse(rawUser) as { name?: string, userrole?: string }) : null);
     };
 
     syncFromStorage();
@@ -62,17 +62,24 @@ export default function Header() {
     router.push("/login");
   };
 
+  const servicesDropdown = [
+    { name: 'Find Lawyers', path: '/lawyer' },
+    { name: 'AI Legal Chat', path: chatHref },
+    { name: 'My Appointments', path: '/my-appointments' },
+  ];
+
+  // Add Lawyer Dashboard only for lawyers
+  if (isAuthenticated && user?.userrole === 'lawyer') {
+    servicesDropdown.push({ name: 'Lawyer Dashboard', path: '/lawyerDashboard' });
+  }
+
   const navItems = [
     { name: 'Home', icon: Home, path: '/' },
     { name: 'About', icon: Info, path: '/about' },
     {
       name: 'Services',
       icon: Briefcase,
-      dropdown: [
-        { name: 'Find Lawyers', path: '/lawyer' },
-        { name: 'AI Legal Chat', path: chatHref },
-        { name: 'My Appointments', path: '/my-appointments' },
-      ]
+      dropdown: servicesDropdown
     },
     { name: 'Lawyers', icon: Users, path: '/lawyer' },
     { name: 'Contact', icon: Mail, path: '/contact' },
