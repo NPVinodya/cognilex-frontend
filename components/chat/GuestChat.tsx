@@ -133,18 +133,30 @@ export default function GuestChat() {
             ))
           )}
 
-          {shouldPromptRegistration && (
-            <div className="bg-gradient-to-br from-amber-600 to-amber-800 rounded-[2rem] p-8 text-center text-white border border-white/10 animate-in zoom-in-95 duration-500">
-              <Shield className="w-12 h-12 text-white/40 mx-auto mb-4" />
-              <h4 className="text-xl font-playfair font-bold mb-2">Enjoying CogniLex AI?</h4>
-              <p className="text-white/80 text-sm mb-6">
-                Register now for unlimited questions, full citations, and access to our lawyer network.
+          {loading && (
+            <div className="flex justify-start mb-6 animate-in fade-in duration-300">
+              <div className="bg-white/10 backdrop-blur-xl rounded-[1.5rem] rounded-tl-none px-5 py-4 border border-white/20">
+                <div className="flex gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-amber-500/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="w-1.5 h-1.5 bg-amber-500/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="w-1.5 h-1.5 bg-amber-500/60 rounded-full animate-bounce"></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {shouldPromptRegistration && !loading && (
+            <div className="bg-gradient-to-br from-amber-600/20 to-amber-900/40 backdrop-blur-md rounded-[2rem] p-8 text-center text-white border border-white/10 animate-in zoom-in-95 duration-500 mb-6">
+              <Shield className="w-12 h-12 text-amber-500/40 mx-auto mb-4" />
+              <h4 className="text-xl font-playfair font-bold mb-2 tracking-tight">Unlock Full Potential</h4>
+              <p className="text-white/60 text-sm mb-6 leading-relaxed">
+                You&apos;ve used your free guest messages. Register now for unlimited AI consultations and expert lawyer access.
               </p>
               <button
                 onClick={() => router.push('/register')}
-                className="w-full py-4 bg-white text-amber-900 rounded-2xl font-black shadow-xl hover:bg-slate-50 transition-all active:scale-95 text-xs uppercase tracking-[0.2em] cursor-pointer"
+                className="w-full py-4 bg-amber-600 text-white rounded-2xl font-black shadow-xl hover:bg-amber-500 transition-all active:scale-95 text-xs uppercase tracking-[0.2em] cursor-pointer"
               >
-                Continue with Free Registration
+                Join CogniLex Today
               </button>
             </div>
           )}
@@ -160,7 +172,7 @@ export default function GuestChat() {
               onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
               placeholder="Ask about Sri Lankan law..."
               disabled={shouldPromptRegistration || loading}
-              className="flex-1 min-w-0 bg-transparent border-none outline-none px-2 md:px-4 py-3 text-white placeholder-white/30 font-medium font-outfit"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none px-2 md:px-4 py-3 text-white placeholder-white/30 font-medium font-inter"
             />
 
             <button
