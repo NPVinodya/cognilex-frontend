@@ -30,8 +30,8 @@ export default function TomTomMap({ apiKey, lat, lng, zoom = 15, language = 'en-
     // Add navigation controls
     newMap.addControl(new tt.NavigationControl());
 
-    // Add marker
-    new tt.Marker().setLngLat([lng, lat]).addTo(newMap);
+    // Add marker with green color to match the theme
+    new tt.Marker({ color: '#16a34a' }).setLngLat([lng, lat]).addTo(newMap);
 
     setMap(newMap);
 
@@ -41,10 +41,19 @@ export default function TomTomMap({ apiKey, lat, lng, zoom = 15, language = 'en-
   }, [apiKey, lat, lng, zoom]);
 
   return (
-    <div 
-      ref={mapElement} 
-      className="w-full h-full rounded-xl overflow-hidden shadow-inner"
-      style={{ minHeight: '400px' }}
-    />
+    <div className="relative w-full h-full group">
+      <div 
+        ref={mapElement} 
+        className="w-full h-full rounded-xl overflow-hidden map-green-tint map-container-premium"
+        style={{ minHeight: '400px' }}
+      />
+      {/* Premium vibrant overlay */}
+      <div className="map-overlay-vibrant rounded-xl" />
+      
+      {/* Premium Badge */}
+      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] font-bold text-green-700 shadow-sm border border-green-100 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+        COGNILLEX VIBRANT MAP
+      </div>
+    </div>
   );
 }
