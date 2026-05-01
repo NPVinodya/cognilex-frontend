@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Users, Scale, MessageSquare, Clock, Download, ArrowUp, ArrowDown,
+  Users, Scale, MessageSquare, Clock, RefreshCw, ArrowUp, ArrowDown,
   CheckCircle, Trash2, Gavel, Shield, UserCheck, UserX
 } from 'lucide-react';
 
@@ -80,14 +80,6 @@ export default function AdminOverview() {
     { label: 'Pending Approvals', value: stats.pending_approvals.toLocaleString(), change: '-4.3%', trend: 'down', icon: Gavel, color: 'from-amber-400 to-amber-500', textColor: 'text-amber-500' },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent mb-4"></div>
-        <p className="text-slate-500 font-bold">Synchronizing dashboard...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="w-full animate-in fade-in slide-in-from-bottom-3 duration-500 pb-20 text-left">
@@ -98,7 +90,7 @@ export default function AdminOverview() {
         </div>
         <div>
           <button onClick={fetchData} className="px-6 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all font-bold flex items-center gap-2 shadow-xl shadow-slate-900/20 active:scale-95">
-            <Download className="w-4 h-4" /> Refresh All Data
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh All Data
           </button>
         </div>
       </div>
