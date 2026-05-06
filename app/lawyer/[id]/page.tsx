@@ -5,10 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   MapPin, Award, Scale, Calendar, User, Lock as LockIcon, Clock, Info,
   Star, Briefcase, Phone, Mail, CheckCircle, AlertCircle, ArrowLeft,
-  DollarSign, Search, ShieldCheck, X, ChevronLeft, ChevronRight
+  DollarSign, Search, ShieldCheck, X, ChevronLeft, ChevronRight, Sparkles
 } from 'lucide-react';
 
 import Header from '@/components/layout/header';
+import LawyerChatCard from '@/components/lawyer/LawyerChatCard';
 
 export default function LawyerProfilePage() {
   const params = useParams();
@@ -420,6 +421,17 @@ export default function LawyerProfilePage() {
                   {/* Placeholder for modal moved to bottom */}
                 </div>
               </div>
+            </div>
+
+            {/* AI Lawyer Assistant Card */}
+            <div className="mt-8">
+              <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2 text-left">
+                <Sparkles className="w-5 h-5 text-amber-600" /> Consultation Assistant
+              </h3>
+              <LawyerChatCard 
+                lawyerId={params.id as string} 
+                lawyerName={lawyer.fullName} 
+              />
             </div>
           </div>
 
