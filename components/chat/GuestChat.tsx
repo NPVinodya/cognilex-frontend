@@ -66,16 +66,18 @@ export default function GuestChat() {
       }
 
       const data = await response.json();
-      
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: data.answer,
         sender: 'bot',
         timestamp: new Date(),
+        sources: data.sources || [],
+        relatedCases: data.related_cases || [],
       };
-      
+
       setMessages(prev => [...prev, botMessage]);
-      
+
     } catch (err: any) {
       console.error('Guest mode error:', err);
       const errorMessage: Message = {
