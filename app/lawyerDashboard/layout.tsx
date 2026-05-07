@@ -28,8 +28,8 @@ interface DashboardContextType {
 }
 
 export const DashboardContext = React.createContext<DashboardContextType>({
-  setIsPageLoading: () => {},
-  setLoadingProgress: () => {},
+  setIsPageLoading: () => { },
+  setLoadingProgress: () => { },
 });
 
 export default function LawyerDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -75,7 +75,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
   React.useEffect(() => {
     setIsPageLoading(true);
     setLoadingProgress(10);
-    
+
     // Slow progress simulation while waiting for actual data
     const timer = setInterval(() => {
       setLoadingProgress(prev => {
@@ -149,7 +149,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
 
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setIsMobileMenuOpen(false)}
         />
@@ -175,7 +175,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
             {SIDEBAR_NAV.map((item) => {
               const isActive = pathname?.startsWith(item.path);
               const badgeValue = item.name === 'Messages' ? unreadCount : item.badge;
-              
+
               return (
                 <Link
                   key={item.name}
@@ -268,7 +268,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
             <button className="sm:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
               <Search className="w-5 h-5" />
             </button>
-            <Link 
+            <Link
               href="/lawyerDashboard/messages"
               className="relative p-2 md:p-2.5 text-slate-500 hover:text-[#FF9000] hover:bg-orange-50 rounded-xl transition-all duration-300"
             >
