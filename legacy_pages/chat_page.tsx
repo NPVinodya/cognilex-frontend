@@ -612,7 +612,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
           </div>
 
           {/* SCROLLABLE MIDDLE SECTION */}
-          <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-2">
+          <div className="flex-1 overflow-y-auto px-6 py-2">
             <div className="animate-in fade-in slide-in-from-left duration-500">
               <div className="space-y-1">
                 {sessions.length > 0 ? (
@@ -756,16 +756,16 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
           </div>
 
           {/* FIXED BOTTOM SECTION (Network & User) */}
-          <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-md">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 font-black px-2 mb-4">Professional Network</p>
-            <div onClick={() => router.push("/lawyer")} className="p-3.5 hover:bg-white dark:hover:bg-white/5 rounded-2xl flex items-center gap-3 cursor-pointer transition-all duration-300 group border border-transparent hover:border-amber-500/30 mb-3 hover:shadow-sm">
+          <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-md">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 font-black px-2 mb-3">Professional Network</p>
+            <div onClick={() => router.push("/lawyer")} className="p-3 hover:bg-white dark:hover:bg-white/5 rounded-2xl flex items-center gap-3 cursor-pointer transition-all duration-300 group border border-transparent hover:border-amber-500/30 mb-2.5 hover:shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">⚖️</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">Find Lawyer</p>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Directory of verified experts</p>
               </div>
             </div>
-            <div onClick={() => router.push(currentUser?.userrole === "lawyer" ? "/lawyerDashboard" : "/lawyerRegistation")} className="p-3.5 hover:bg-white dark:hover:bg-white/5 rounded-2xl flex items-center gap-3 cursor-pointer transition-all duration-300 group border border-transparent hover:border-amber-500/30 mb-6 hover:shadow-sm">
+            <div onClick={() => router.push(currentUser?.userrole === "lawyer" ? "/lawyerDashboard" : "/lawyerRegistation")} className="p-3 hover:bg-white dark:hover:bg-white/5 rounded-2xl flex items-center gap-3 cursor-pointer transition-all duration-300 group border border-transparent hover:border-amber-500/30 mb-4 hover:shadow-sm">
               <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
                 {currentUser?.userrole === "lawyer" ? "🏛️" : "🎓"}
               </div>
@@ -775,7 +775,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
               </div>
             </div>
 
-            <div className="h-px w-full bg-slate-200 dark:bg-slate-800/50 my-6"></div>
+            <div className="h-px w-full bg-slate-200 dark:bg-slate-800/50 my-4"></div>
 
             {/* USER PANEL */}
             <div className="relative">
@@ -924,7 +924,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
           </header>
 
           {/* CHAT AREA */}
-          <div className="flex-1 overflow-y-auto px-4 md:px-24 py-8 md:py-12 space-y-10 no-scrollbar">
+          <div className="flex-1 overflow-y-auto px-4 md:px-24 py-8 md:py-12 space-y-10">
             {messages.length === 0 && (
               <div className="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000">
                 <div className="bg-white p-4 rounded-[2rem] shadow-2xl mb-8 border border-slate-200 dark:border-white/10">
