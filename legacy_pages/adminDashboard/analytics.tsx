@@ -103,11 +103,11 @@ export default function AdminAnalyticsPage() {
         if (active && payload && payload.length) {
             return (
                 <div className="bg-[#181B25] text-white p-4 rounded-2xl shadow-2xl border border-white/5 text-left backdrop-blur-md">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">{label}</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-200 mb-2">{label}</p>
                     {payload.map((p: any, i: number) => (
                         <p key={i} className="text-sm font-bold flex items-center gap-2 mb-1">
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></span>
-                            {p.name}: {Math.floor(p.value)}
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color || p.payload?.color || '#FF9000' }}></span>
+                            {p.name}: {p.value.toFixed ? p.value.toFixed(2) : p.value}
                         </p>
                     ))}
                 </div>
@@ -262,9 +262,9 @@ export default function AdminAnalyticsPage() {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={tokenTrend}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="name" hide />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
                                         <YAxis tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                        <Tooltip contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                        <Tooltip content={<CustomTooltip />} />
                                         <Area type="monotone" dataKey="tokens" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} strokeWidth={2} name="Tokens" />
                                     </AreaChart>
                                 </ResponsiveContainer>
@@ -284,13 +284,17 @@ export default function AdminAnalyticsPage() {
                         <div className="h-[250px] w-full">
                             {latencyTrend.length > 0 ? (
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={latencyTrend}>
+                                    <BarChart data={latencyTrend}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="name" hide />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
                                         <YAxis tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                        <Tooltip contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                        <Line type="monotone" dataKey="latency" stroke="#FF9000" strokeWidth={3} dot={{ r: 4, fill: '#FF9000', stroke: '#fff' }} name="Latency (s)" />
-                                    </LineChart>
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Bar dataKey="latency" fill="#FF9000" radius={[4, 4, 0, 0]} name="Latency (s)">
+                                            {latencyTrend.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.latency > 4 ? '#f43f5e' : '#FF9000'} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
                                 </ResponsiveContainer>
                             ) : (
                                 <div className="h-full flex items-center justify-center text-slate-200">

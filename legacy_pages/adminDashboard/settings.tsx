@@ -11,6 +11,7 @@ export default function AdminSettingsPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState({ type: '', message: '' });
+    const [adminId, setAdminId] = useState<string | null>(null);
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,7 +20,7 @@ export default function AdminSettingsPage() {
     const [pushNotifications, setPushNotifications] = useState(true);
 
     // Form states
-    const [profileData, setProfileData] = useState({ name: '', email: '' });
+    const [profileData, setProfileData] = useState({ name: 'System Admin', email: 'admin@cognilex.com' });
     const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
     const [platformSettings, setPlatformSettings] = useState({
         markup_percentage: 20.0,
@@ -30,8 +31,17 @@ export default function AdminSettingsPage() {
     React.useEffect(() => {
         const adminStr = localStorage.getItem('adminUser');
         if (adminStr) {
-            const admin = JSON.parse(adminStr);
-            setProfileData({ name: admin.name || '', email: admin.email || '' });
+            try {
+                const admin = JSON.parse(adminStr);
+                const id = admin.id || admin._id || null;
+                setAdminId(id);
+                setProfileData({ 
+                    name: admin.name || 'System Admin', 
+                    email: admin.email || 'admin@cognilex.com' 
+                });
+            } catch (e) {
+                console.error("Failed to parse admin user", e);
+            }
         }
 
         // Load preferences
@@ -49,9 +59,7 @@ export default function AdminSettingsPage() {
 
     const fetchAdminPreferences = async () => {
         try {
-            const adminStr = localStorage.getItem('adminUser');
-            if (adminStr) {
-                const adminId = JSON.parse(adminStr).id;
+            if (adminId) {
                 const response = await fetch(`${API_URL}/admin/preferences/${adminId}`);
                 if (response.ok) {
                     const prefs = await response.json();
@@ -86,9 +94,7 @@ export default function AdminSettingsPage() {
 
         // Save to backend
         try {
-            const adminStr = localStorage.getItem('adminUser');
-            if (adminStr) {
-                const adminId = JSON.parse(adminStr).id;
+            if (adminId) {
                 await fetch(`${API_URL}/admin/preferences/${adminId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -109,9 +115,7 @@ export default function AdminSettingsPage() {
 
         // Save to backend
         try {
-            const adminStr = localStorage.getItem('adminUser');
-            if (adminStr) {
-                const adminId = JSON.parse(adminStr).id;
+            if (adminId) {
                 await fetch(`${API_URL}/admin/preferences/${adminId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -128,9 +132,13 @@ export default function AdminSettingsPage() {
         setLoading(true);
         setStatus({ type: '', message: '' });
 
+        if (!adminId) {
+            setStatus({ type: 'error', message: 'Admin session expired. Please login again.' });
+            setLoading(false);
+            return;
+        }
+
         try {
-            const adminStr = localStorage.getItem('adminUser');
-            const adminId = adminStr ? JSON.parse(adminStr).id : null;
             const response = await fetch(`${API_URL}/admin/profile/${adminId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -146,7 +154,9 @@ export default function AdminSettingsPage() {
                 admin.email = profileData.email;
                 localStorage.setItem('adminUser', JSON.stringify(admin));
             } else {
-                setStatus({ type: 'error', message: result.detail || 'Update failed' });
+                const detail = result.detail;
+                const errorMessage = typeof detail === 'string' ? detail : (Array.isArray(detail) ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ') : JSON.stringify(detail) || 'Update failed');
+                setStatus({ type: 'error', message: errorMessage });
             }
         } catch (err) {
             setStatus({ type: 'error', message: 'Connection error' });
@@ -165,9 +175,13 @@ export default function AdminSettingsPage() {
         setLoading(true);
         setStatus({ type: '', message: '' });
 
+        if (!adminId) {
+            setStatus({ type: 'error', message: 'Admin session expired. Please login again.' });
+            setLoading(false);
+            return;
+        }
+
         try {
-            const adminStr = localStorage.getItem('adminUser');
-            const adminId = adminStr ? JSON.parse(adminStr).id : null;
             const response = await fetch(`${API_URL}/admin/change-password/${adminId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -182,7 +196,9 @@ export default function AdminSettingsPage() {
                 setStatus({ type: 'success', message: 'Password changed successfully!' });
                 setPasswordData({ current: '', new: '', confirm: '' });
             } else {
-                setStatus({ type: 'error', message: result.detail || 'Change failed' });
+                const detail = result.detail;
+                const errorMessage = typeof detail === 'string' ? detail : (Array.isArray(detail) ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ') : JSON.stringify(detail) || 'Change failed');
+                setStatus({ type: 'error', message: errorMessage });
             }
         } catch (err) {
             setStatus({ type: 'error', message: 'Connection error' });
@@ -207,7 +223,9 @@ export default function AdminSettingsPage() {
             if (response.ok) {
                 setStatus({ type: 'success', message: 'Platform settings updated successfully!' });
             } else {
-                setStatus({ type: 'error', message: result.detail || 'Update failed' });
+                const detail = result.detail;
+                const errorMessage = typeof detail === 'string' ? detail : (Array.isArray(detail) ? detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ') : JSON.stringify(detail) || 'Update failed');
+                setStatus({ type: 'error', message: errorMessage });
             }
         } catch (err) {
             setStatus({ type: 'error', message: 'Connection error' });
@@ -266,9 +284,11 @@ export default function AdminSettingsPage() {
                         {activeTab === 'profile' && (
                             <form onSubmit={handleProfileUpdate} className="p-8 md:p-12 space-y-8 animate-in slide-in-from-right duration-500">
                                 <div className="flex items-center gap-6 border-b border-slate-100 pb-8">
-                                    <div className="w-24 h-24 rounded-3xl bg-[#181B25] flex items-center justify-center text-[#FF9000] text-4xl font-black shadow-2xl border-4 border-white">
-                                        {profileData.name.charAt(0)}
-                                    </div>
+                                    <img 
+                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.name)}&background=181B25&color=FF9000&bold=true`}
+                                        alt="Admin Avatar"
+                                        className="w-24 h-24 rounded-3xl shadow-2xl border-4 border-white object-cover"
+                                    />
                                     <div>
                                         <h2 className="text-2xl font-black text-slate-900">{profileData.name}</h2>
                                         <p className="text-slate-500 font-medium">System Administrator</p>

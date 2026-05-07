@@ -185,10 +185,10 @@ export default function LawyerProfilePage() {
 
         {/* Main Profile Header Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8 mb-8">
-          <div className="flex flex-col md:flex-row gap-8 items-start">
+          <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start text-center md:text-left">
 
             {/* Avatar Box */}
-            <div className="w-32 h-32 md:w-40 md:h-40 shrink-0 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-slate-100 -mt-16 md:-mt-20">
+            <div className="w-32 h-32 md:w-40 md:h-40 shrink-0 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-slate-100 -mt-16 md:-mt-20 mx-auto md:mx-0">
               {lawyer.profilePhotoUrl ? (
                 <img src={lawyer.profilePhotoUrl} alt={lawyer.fullName} className="w-full h-full object-cover" />
               ) : (
@@ -199,21 +199,22 @@ export default function LawyerProfilePage() {
             </div>
 
             {/* Core Info */}
-            <div className="flex-1 text-left">
+            <div className="flex-1 w-full">
               <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{lawyer.fullName}</h1>
-                    <ShieldCheck className="w-6 h-6 text-amber-600" />
+                <div className="flex flex-col items-center md:items-start">
+                  <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
+                    <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">{lawyer.fullName}</h1>
+                    <ShieldCheck className="w-5 h-5 md:w-6 md:h-6 text-amber-600" />
                   </div>
-                  <p className="text-slate-600 text-lg font-medium">{lawyer.practiceAreas?.join(', ') || 'Legal Counsel'}</p>
-                  <div className="flex items-center gap-4 mt-4 text-sm text-slate-500 font-medium">
+                  <p className="text-slate-600 text-base md:text-lg font-medium">{lawyer.practiceAreas?.join(', ') || 'Legal Counsel'}</p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-2 sm:gap-4 mt-4 text-sm text-slate-500 font-medium">
                     <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-slate-400" /> {lawyer.province}</span>
+                    <span className="hidden sm:inline text-slate-300">•</span>
                     <span className="flex items-center gap-1.5"><Briefcase className="w-4 h-4 text-slate-400" /> {lawyer.yearsOfExperience} Years Experience</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center md:justify-start gap-2 mt-2 md:mt-0">
                   <div className="px-4 py-2 bg-slate-50 text-slate-700 rounded-lg text-sm font-bold border border-slate-200 flex items-center gap-2">
                     <Scale className="w-4 h-4 text-amber-600" />
                     BAR: {lawyer.barCouncilNumber}
@@ -224,7 +225,7 @@ export default function LawyerProfilePage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
           {/* Main Column */}
           <div className="lg:col-span-2 space-y-8">
@@ -367,11 +368,11 @@ export default function LawyerProfilePage() {
                                   <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest ${isAvailable ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
                                     {isGroup ? 'Consultation Range' : 'Session'}
                                   </span>
-                                  <span className="text-[13px] font-bold text-slate-900 flex items-center gap-1.5">
-                                    <Clock className="w-4 h-4 text-amber-500" />
+                                  <span className="text-[13px] font-bold text-slate-900 flex flex-wrap items-center gap-1.5">
+                                    <Clock className="w-4 h-4 text-amber-500 shrink-0" />
                                     <span className="text-amber-600">{session.date}</span>
-                                    <span className="text-slate-300 mx-1">|</span>
-                                    {session.time}
+                                    <span className="hidden sm:inline text-slate-300 mx-1">|</span>
+                                    <span>{session.time}</span>
                                   </span>
                                 </div>
 
@@ -471,7 +472,7 @@ export default function LawyerProfilePage() {
                   </div>
                   <div className="text-left">
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Phone</p>
-                    <p className="text-sm text-slate-900 font-bold">{lawyer.phone || '+94 7X XXX XXXX'}</p>
+                    <p className="text-sm text-slate-900 font-bold">{lawyer.phone ? lawyer.phone.replace(/\d(?=(?:\D*\d){3})/g, '*') : '+94 7X XXX XXXX'}</p>
                   </div>
                 </li>
                 <li className="flex items-start gap-4">

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import {
     Calendar as CalendarIcon, MapPin, Clock, Plus, Edit, Trash2,
     Users, TrendingUp, Star, Settings, ChevronRight, ChevronLeft, CheckCircle2,
-    X, Info, User, FileText, XCircle, Loader2
+    X, Info, User, FileText, XCircle, Loader2, MessageSquare
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -321,13 +321,13 @@ export default function LawyerDashboard() {
                 {/* Today's Total Slots Card */}
                 <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
                     <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-blue-50 text-blue-500 rounded-xl">
+                        <div className="p-3 bg-slate-50 text-slate-500 rounded-xl">
                             <Clock className="w-6 h-6" />
                         </div>
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-600 hover:bg-blue-50 border-none font-bold">Today</Badge>
+                        <Badge variant="secondary" className="bg-slate-50 text-slate-600 hover:bg-slate-50 border-none font-bold">Capacity</Badge>
                     </div>
                     <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Total Slots</p>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Slots</p>
                         <h3 className="text-[26px] font-black text-[#181B25] leading-none">{stats?.todaySlots || 0}</h3>
                     </div>
                 </div>
@@ -342,9 +342,7 @@ export default function LawyerDashboard() {
                     </div>
                     <div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Active Clients</p>
-                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none mb-4">
-                            {(stats?.activeClients || 0).toLocaleString()}
-                        </h3>
+                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none">{stats?.activeClients || 0}</h3>
                     </div>
                 </div>
             </div>

@@ -35,11 +35,10 @@ export default function Footer() {
   ];
 
   const legalLinks = [
-    { name: 'Privacy Policy', path: '/privacy' },
-    { name: 'Terms of Service', path: '/terms' },
-    { name: 'Cookie Policy', path: '/cookies' },
+    { name: 'Privacy Policy', path: '/legal/privacy' },
+    { name: 'Terms of Service', path: '/legal/terms' },
+    { name: 'Cookie Policy', path: '/legal/cookies' },
     { name: 'Lawyer Registration', path: '/lawyerRegistation' },
-    { name: 'FAQs', path: '/faq' },
   ];
 
   const practiceAreas = [
@@ -171,8 +170,17 @@ export default function Footer() {
                   <li key={link.name}>
                     <button
                       onClick={() => {
-                        if (link.name === 'Lawyer Registration' && !isAuthenticated) {
-                          router.push('/login');
+                        const userStr = localStorage.getItem("user");
+                        const user = userStr ? JSON.parse(userStr) : null;
+                        
+                        if (link.name === 'Lawyer Registration') {
+                          if (!isAuthenticated) {
+                            router.push('/login');
+                          } else if (user?.userrole === 'lawyer') {
+                            router.push('/lawyerDashboard');
+                          } else {
+                            router.push(link.path);
+                          }
                         } else {
                           router.push(link.path);
                         }
