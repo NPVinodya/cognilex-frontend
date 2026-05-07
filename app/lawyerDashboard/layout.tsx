@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
+import { API_BASE_URL } from '@/lib/constants';
 
 const SIDEBAR_NAV = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/lawyerDashboard/dashboard', badge: null },
@@ -42,6 +43,32 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
 
   const [isPageLoading, setIsPageLoading] = React.useState(true);
   const [loadingProgress, setLoadingProgress] = React.useState(0);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const userJson = localStorage.getItem('user');
+      if (!userJson) return;
+      const user = JSON.parse(userJson);
+      const lawyerId = user.id || user._id;
+      if (!lawyerId) return;
+
+      // Use API_BASE_URL from constants for reliability
+      const res = await fetch(`${API_BASE_URL}/lawyer-dashboard/${lawyerId}/stats`);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Dashboard Stats Fetched:", data);
+        if (data.success && data.stats) {
+          setUnreadCount(data.stats.unreadMessages || 0);
+        }
+      } else {
+        console.error("Failed to fetch stats:", res.status);
+      }
+    } catch (err) {
+      console.error('Failed to fetch unread count', err);
+    }
+  };
 
   // Initial navigation loading start
   React.useEffect(() => {
@@ -92,10 +119,8 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
         const user = JSON.parse(userJson);
         setLawyerProfile(prev => ({ ...prev, name: user.name || 'Lawyer' }));
 
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
         // Fetch additional profile info if available
-        const response = await fetch(`${API_URL}/lawyer-dashboard/${user.id}/profile`);
+        const response = await fetch(`${API_BASE_URL}/lawyer-dashboard/${user.id}/profile`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.profile) {
@@ -112,6 +137,10 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
     };
 
     fetchLawyerInfo();
+    fetchUnreadCount();
+
+    const interval = setInterval(fetchUnreadCount, 15000); // Check every 15s
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -133,6 +162,8 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
           <nav className="space-y-1">
             {SIDEBAR_NAV.map((item) => {
               const isActive = pathname?.startsWith(item.path);
+              const badgeValue = item.name === 'Messages' ? unreadCount : item.badge;
+              
               return (
                 <Link
                   key={item.name}
@@ -146,10 +177,10 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
                     <item.icon className="h-4 w-4" />
                     <span className="font-semibold text-sm">{item.name}</span>
                   </div>
-                  {item.badge && (
+                  {(badgeValue ?? 0) > 0 && (
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-[#FF9000] text-white'
                       }`}>
-                      {item.badge}
+                      {badgeValue}
                     </span>
                   )}
                 </Link>
@@ -204,21 +235,34 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
 
         {/* Top Header */}
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0">
-          <div className="flex items-center gap-4 max-w-lg w-full">
-            <div className="relative w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <div className="flex items-center gap-4 max-w-xl w-full">
+            <div className="relative w-full group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#FF9000] transition-colors" />
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search appointments, clients, or cases..."
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF9000] focus:bg-white transition placeholder-slate-400 font-medium"
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-[#FF9000] focus:bg-white transition-all placeholder-slate-400"
               />
             </div>
           </div>
+
           <div className="flex items-center gap-5">
-            <button className="relative text-slate-500 hover:text-slate-800 transition">
+            <Link 
+              href="/lawyerDashboard/messages"
+              className="relative p-2.5 text-slate-500 hover:text-[#FF9000] hover:bg-orange-50 rounded-xl transition-all duration-300"
+            >
               <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-            </button>
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-rose-500 ring-2 ring-white text-[10px] font-black text-white flex items-center justify-center animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+            <div className="h-10 w-10 rounded-xl bg-[#181B25] border border-slate-100 flex items-center justify-center text-[#FF9000] font-black shadow-sm overflow-hidden">
+              {lawyerProfile.name.charAt(0)}
+            </div>
           </div>
         </header>
 
