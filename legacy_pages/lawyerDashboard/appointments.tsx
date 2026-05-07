@@ -307,7 +307,7 @@ export default function AppointmentsPage() {
                              <div className="p-20 text-center text-slate-500 font-medium whitespace-nowrap">Loading appointments...</div>
                         ) : filteredAppointments.length > 0 ? (
                             filteredAppointments.map((apt) => (
-                                <div key={apt.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-6 md:px-8 items-center hover:bg-slate-50/50 transition duration-150 relative">
+                                <div key={apt.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-6 md:px-8 items-center hover:bg-slate-50/50 transition duration-150 relative group">
                                     <div className="col-span-1 md:col-span-4 flex items-center gap-4">
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border ${apt.isBooked ? 'bg-slate-100 border-slate-200' : 'bg-orange-50 border-orange-100'}`}>
                                             <User className={`w-5 h-5 ${apt.isBooked ? 'text-slate-400' : 'text-[#FF9000]'}`} />

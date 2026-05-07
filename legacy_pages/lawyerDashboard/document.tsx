@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Plus, Folder, File as FileIcon, Download, MoreVertical, UploadCloud, Clock, X, CheckCircle } from 'lucide-react';
+import { FileText, Search, Plus, Folder, File as FileIcon, Download, MoreVertical, UploadCloud, Clock, X, CheckCircle, Trash2 } from 'lucide-react';
 import { DashboardContext } from '@/app/lawyerDashboard/layout';
 
 const MOCK_FOLDERS = [
@@ -52,6 +52,19 @@ export default function DocumentsPage() {
 
         fetchDocuments();
     }, []);
+
+    const handleDeleteDocument = async (docId: string) => {
+        if (!confirm("Are you sure you want to delete this document?")) return;
+        
+        try {
+            // Note: Since this is purely frontend state without a specific delete API right now,
+            // we will just filter it out from the local state.
+            // You can add a fetch DELETE request here later.
+            setDocuments(prev => prev.filter(d => d.id !== docId));
+        } catch (error) {
+            console.error("Error deleting document:", error);
+        }
+    };
 
     const handleFileUpload = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -191,14 +204,22 @@ export default function DocumentsPage() {
                                 </div>
                                 <div className="flex items-center gap-4">
                                     <p className="text-xs text-slate-500 font-medium hidden sm:flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {doc.date}</p>
-                                    <a 
-                                        href={doc.url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-[#FF9000] hover:border-[#FF9000] rounded-lg transition shadow-sm"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                    </a>
+                                    <div className="flex items-center gap-2">
+                                        <a 
+                                            href={doc.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-[#FF9000] hover:border-[#FF9000] rounded-lg transition shadow-sm"
+                                        >
+                                            <Download className="w-4 h-4" />
+                                        </a>
+                                        <button 
+                                            onClick={() => handleDeleteDocument(doc.id)}
+                                            className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 rounded-lg transition shadow-sm"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )) : (
