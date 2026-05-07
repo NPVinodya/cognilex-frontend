@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Scale, Calendar as CalendarIcon, Users, Briefcase, FileText,
-  MessageSquare, TrendingUp, Settings, LayoutDashboard, Search, Bell, LogOut, Sparkles, User
+  MessageSquare, TrendingUp, Settings, LayoutDashboard, Search, Bell, LogOut, Sparkles, User, Menu, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
@@ -28,8 +28,8 @@ interface DashboardContextType {
 }
 
 export const DashboardContext = React.createContext<DashboardContextType>({
-  setIsPageLoading: () => {},
-  setLoadingProgress: () => {},
+  setIsPageLoading: () => { },
+  setLoadingProgress: () => { },
 });
 
 export default function LawyerDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -45,6 +45,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
   const [loadingProgress, setLoadingProgress] = React.useState(0);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [unreadCount, setUnreadCount] = React.useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   const fetchUnreadCount = async () => {
     try {
@@ -74,7 +75,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
   React.useEffect(() => {
     setIsPageLoading(true);
     setLoadingProgress(10);
-    
+
     // Slow progress simulation while waiting for actual data
     const timer = setInterval(() => {
       setLoadingProgress(prev => {
@@ -146,15 +147,26 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
   return (
     <div className="flex h-screen bg-[#F8F9FA] font-sans overflow-hidden">
 
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* ---------------- S I D E B A R ---------------- */}
-      <aside className="w-64 bg-[#181B25] text-slate-300 hidden lg:flex flex-col flex-shrink-0 shadow-xl overflow-hidden">
-        <div className="h-20 flex items-center px-6 bg-[#181B25] z-10 shrink-0 border-b border-white/5">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#181B25] text-slate-300 flex flex-col flex-shrink-0 shadow-2xl transition-transform duration-300 lg:static lg:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="h-16 md:h-20 flex items-center justify-between px-6 bg-[#181B25] z-10 shrink-0 border-b border-white/5">
           <Link href="/" className="flex items-center gap-3">
             <div className="bg-white p-1.5 rounded-lg flex items-center justify-center shadow-sm">
               <Scale className="h-5 w-5 text-[#FF9000]" strokeWidth={2.5} />
             </div>
             <span className="font-bold text-xl tracking-tight text-white">CogniLex AI</span>
           </Link>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
+            <X className="w-6 h-6" />
+          </button>
         </div>
 
         <div className="flex-1 py-6 px-4 overflow-y-auto">
@@ -163,11 +175,12 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
             {SIDEBAR_NAV.map((item) => {
               const isActive = pathname?.startsWith(item.path);
               const badgeValue = item.name === 'Messages' ? unreadCount : item.badge;
-              
+
               return (
                 <Link
                   key={item.name}
                   href={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all ${isActive
                     ? 'bg-[#FF9000] text-white shadow-md shadow-orange-900/20'
                     : 'hover:bg-white/5 hover:text-white text-slate-400'
@@ -234,24 +247,30 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Top Header */}
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0">
-          <div className="flex items-center gap-4 max-w-xl w-full">
-            <div className="relative w-full group">
+        <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 z-10 shrink-0 gap-4">
+          <div className="flex items-center gap-2 md:gap-4 flex-1">
+            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="relative w-full max-w-xl group hidden sm:block">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-[#FF9000] transition-colors" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search appointments, clients, or cases..."
-                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-[#FF9000] focus:bg-white transition-all placeholder-slate-400"
+                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/10 focus:border-[#FF9000] focus:bg-white transition-all placeholder-slate-400"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-5">
-            <Link 
+          <div className="flex items-center gap-3 md:gap-5">
+            <button className="sm:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+              <Search className="w-5 h-5" />
+            </button>
+            <Link
               href="/lawyerDashboard/messages"
-              className="relative p-2.5 text-slate-500 hover:text-[#FF9000] hover:bg-orange-50 rounded-xl transition-all duration-300"
+              className="relative p-2 md:p-2.5 text-slate-500 hover:text-[#FF9000] hover:bg-orange-50 rounded-xl transition-all duration-300"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
@@ -260,14 +279,14 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
                 </span>
               )}
             </Link>
-            <div className="h-10 w-10 rounded-xl bg-[#181B25] border border-slate-100 flex items-center justify-center text-[#FF9000] font-black shadow-sm overflow-hidden">
+            <div className="h-9 w-9 md:h-10 md:w-10 rounded-xl bg-[#181B25] border border-slate-100 flex items-center justify-center text-[#FF9000] font-black shadow-sm overflow-hidden shrink-0">
               {lawyerProfile.name.charAt(0)}
             </div>
           </div>
         </header>
 
         {/* Dynamic Page Content */}
-        <div className="flex-1 overflow-y-auto p-8 lg:p-10">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10">
           <DashboardContext.Provider value={{ setIsPageLoading, setLoadingProgress }}>
             {isPageLoading && <DashboardLoading progress={loadingProgress} />}
             <div className={isPageLoading ? 'hidden' : 'block'}>

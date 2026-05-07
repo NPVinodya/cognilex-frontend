@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { 
     Activity, TrendingUp, Users, DollarSign, Calendar, ChevronDown, Download, Filter, 
     ArrowUpRight, ArrowDownRight, Clock, Plus, Star, Briefcase, ChevronRight, CheckCircle2,
-    PieChart, FileUp
+    PieChart, FileUp, FileText
 } from 'lucide-react';
 import { DashboardContext } from '@/app/lawyerDashboard/layout';
+import { LOGO_BASE64 } from './logoBase64';
 
 interface MonthlyData {
     month: string;
@@ -66,7 +67,21 @@ export default function AnalyticsPage() {
         fetchAnalytics();
     }, [timePeriod]);
 
-    const handleExport = () => {
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const exportMenuRef = React.useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+                setShowExportMenu(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleExportCSV = () => {
+        setShowExportMenu(false);
         if (monthlyData.length === 0) return;
         
         let csvContent = "Time Period,Bookings,Gross Revenue (LKR),Platform Fees (LKR),Net Revenue (LKR)\n";
@@ -86,6 +101,99 @@ export default function AnalyticsPage() {
         document.body.removeChild(link);
     };
 
+    const handleExportPDF = async () => {
+        setShowExportMenu(false);
+        if (monthlyData.length === 0) return;
+
+        try {
+            // Dynamic import to avoid SSR issues with jspdf
+            const { default: jsPDF } = await import('jspdf');
+            const { default: autoTable } = await import('jspdf-autotable');
+            
+            const doc = new jsPDF();
+            
+            // Add Logo Image
+            try {
+                // Using the exact logo provided by the user
+                doc.addImage(LOGO_BASE64, 'PNG', 14, 12, 60, 20);
+            } catch (e) {
+                console.warn("Could not load logo image for PDF", e);
+                // Fallback text if image fails
+                doc.setFontSize(24);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(24, 27, 37);
+                doc.text('CogniLex AI', 14, 24);
+            }
+
+            // Report Title
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(24, 27, 37);
+            doc.text('Practice Analytics Report', 14, 45);
+            
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100, 116, 139);
+            const periodText = timePeriod === 'this-month' ? 'Current Month' : timePeriod === 'last-month' ? 'Last Month' : 'This Year';
+            doc.text(`Generated on: ${new Date().toLocaleDateString()} | Period: ${periodText}`, 14, 51);
+
+            // Summary Stats
+            doc.setFillColor(248, 249, 250);
+            doc.roundedRect(14, 57, 182, 25, 3, 3, 'F');
+            
+            const totalGross = monthlyData.reduce((acc, curr) => acc + curr.gross, 0);
+            const totalNet = monthlyData.reduce((acc, curr) => acc + curr.net, 0);
+            const totalBookings = monthlyData.reduce((acc, curr) => acc + curr.bookings, 0);
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(100, 116, 139);
+            doc.text('Total Revenue', 20, 65);
+            doc.text('Net Earnings', 80, 65);
+            doc.text('Total Bookings', 140, 65);
+
+            doc.setFontSize(14);
+            doc.setTextColor(24, 27, 37);
+            doc.text(`LKR ${totalGross.toLocaleString()}`, 20, 73);
+            doc.setTextColor(16, 185, 129); // Emerald
+            doc.text(`LKR ${totalNet.toLocaleString()}`, 80, 73);
+            doc.setTextColor(24, 27, 37);
+            doc.text(`${totalBookings}`, 140, 73);
+
+            // Table Data
+            const tableColumn = ["Month", "Bookings", "Gross Revenue", "Platform Fees", "Net Revenue"];
+            const tableRows = monthlyData.map(d => [
+                d.month,
+                d.bookings,
+                `LKR ${d.gross.toLocaleString()}`,
+                `LKR ${d.fees.toLocaleString()}`,
+                `LKR ${d.net.toLocaleString()}`
+            ]);
+
+            autoTable(doc, {
+                startY: 90,
+                head: [tableColumn],
+                body: tableRows,
+                theme: 'grid',
+                headStyles: { fillColor: [255, 144, 0], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [248, 249, 250] },
+                styles: { fontSize: 10, cellPadding: 5 },
+            });
+
+            // Footer Note
+            const pageHeight = doc.internal.pageSize.getHeight();
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(148, 163, 184); // slate-400
+            doc.text('* Note: This is a computer-generated document and does not require a physical signature.', 14, pageHeight - 15);
+
+            doc.save(`Practice_Analytics_${timePeriod}_${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Could not generate PDF. Make sure jspdf is installed.");
+        }
+    };
+
 
 
     const maxNet = monthlyData.length > 0 ? Math.max(...monthlyData.map(d => d.net)) : 1000;
@@ -99,13 +207,32 @@ export default function AnalyticsPage() {
                     <p className="text-slate-500 font-medium mt-1.5 text-sm">In-depth performance insights and financial transparency.</p>
                 </div>
                 <div className="flex gap-4">
-                    <button 
-                        onClick={handleExport}
-                        disabled={monthlyData.length === 0}
-                        className="h-12 px-6 bg-white border border-slate-200 rounded-full text-sm font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <FileUp className="w-4 h-4 text-[#FF9000]" /> Export Data
-                    </button>
+                    <div className="relative" ref={exportMenuRef}>
+                        <button 
+                            onClick={() => setShowExportMenu(!showExportMenu)}
+                            disabled={monthlyData.length === 0}
+                            className="h-12 px-6 bg-white border border-slate-200 rounded-full text-sm font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <FileUp className="w-4 h-4 text-[#FF9000]" /> Export Data
+                        </button>
+                        
+                        {showExportMenu && (
+                            <div className="absolute right-0 top-14 w-48 bg-white border border-slate-100 rounded-xl shadow-xl z-50 py-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <button 
+                                    onClick={handleExportPDF}
+                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-[#FF9000] flex items-center gap-2 transition"
+                                >
+                                    <FileText className="w-4 h-4" /> Export as PDF
+                                </button>
+                                <button 
+                                    onClick={handleExportCSV}
+                                    className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-[#FF9000] flex items-center gap-2 transition"
+                                >
+                                    <FileText className="w-4 h-4" /> Export as CSV
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <div className="relative">
                         <select 
                             value={timePeriod}
