@@ -56,7 +56,7 @@ export default function RootLayout({
         
         // PROTECTION: Force Light Mode on critical business-critical pages to prevent visibility issues
         var path = window.location.pathname.toLowerCase();
-        if (path.includes("lawyerdashboard") || path.includes("lawyerregistation")) {
+        if (path.includes("lawyerdashboard") || path.includes("lawyerregistation") || path.includes("lawyer-registration")) {
           useDark = false;
         }
 
