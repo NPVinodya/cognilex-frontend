@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-  Users, Scale, Shield, Bell, Menu, X, LayoutDashboard, Clock, LogOut, MessageSquare, Settings, Wallet
+  Users, Scale, Shield, Bell, Menu, X, LayoutDashboard, Clock, LogOut, MessageSquare, Settings, Wallet, ChartPie
 } from 'lucide-react';
 import { clearAdminSession } from '@/lib/adminSession';
 
@@ -17,6 +17,7 @@ const SIDEBAR_ITEMS = [
   { id: 'approvals', name: 'Pending Approvals', icon: Clock, href: '/adminDashboard/approvals' },
   { id: 'finance', name: 'Financial Analytics', icon: Wallet, href: '/adminDashboard/finance' },
   { id: 'settings', name: 'System Settings', icon: Settings, href: '/adminDashboard/settings' },
+  { id: 'analytics', name: 'Analytics', icon: ChartPie, href: '/adminDashboard/analytics' },
 ];
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
     role: 'Super Administrator',
     avatar: 'https://ui-avatars.com/api/?name=Admin&background=181B25&color=FF9000&bold=true'
   });
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const [darkMode, setDarkMode] = useState(false);
 
   const handleLogout = () => {
@@ -63,15 +65,15 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
         const adminStr = localStorage.getItem('adminUser');
         if (adminStr) {
           const adminId = JSON.parse(adminStr).id;
-          const response = await fetch(`http://localhost:8000/admin/preferences/${adminId}`);
+          const response = await fetch(`${API_URL}/admin/preferences/${adminId}`);
           if (response.ok) {
             const prefs = await response.json();
             setDarkMode(prefs.darkMode);
           }
         } else {
-           // Fallback to local storage if not logged in yet or no backend access
-           const prefs = JSON.parse(localStorage.getItem('admin_prefs') || '{}');
-           setDarkMode(prefs.darkMode || false);
+          // Fallback to local storage if not logged in yet or no backend access
+          const prefs = JSON.parse(localStorage.getItem('admin_prefs') || '{}');
+          setDarkMode(prefs.darkMode || false);
         }
       } catch (err) {
         console.error("Failed to fetch admin preferences", err);
@@ -224,10 +226,6 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           </div>
 
           <div className="flex items-center gap-5">
-            <button className="relative p-2.5 text-slate-500 hover:text-[#FF9000] hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-xl transition-all duration-300">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-[#1A1D27]"></span>
-            </button>
             <div className="h-10 w-10 rounded-xl bg-[#181B25] dark:bg-slate-800 border border-slate-200 dark:border-white/10 flex items-center justify-center text-[#FF9000] font-black shadow-sm overflow-hidden">
               {adminProfile.name.charAt(0)}
             </div>

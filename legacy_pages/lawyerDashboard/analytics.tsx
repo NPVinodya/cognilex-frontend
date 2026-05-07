@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Activity, TrendingUp, Users, DollarSign, Calendar, ChevronDown, Download, Filter, 
     ArrowUpRight, ArrowDownRight, Clock, Plus, Star, Briefcase, ChevronRight, CheckCircle2,
-    PieChart
+    PieChart, FileUp
 } from 'lucide-react';
 import { DashboardContext } from '@/app/lawyerDashboard/layout';
 
@@ -104,7 +104,7 @@ export default function AnalyticsPage() {
                         disabled={monthlyData.length === 0}
                         className="h-12 px-6 bg-white border border-slate-200 rounded-full text-sm font-bold text-slate-700 hover:bg-slate-50 transition shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Download className="w-4 h-4 text-[#FF9000]" /> Export Data
+                        <FileUp className="w-4 h-4 text-[#FF9000]" /> Export Data
                     </button>
                     <div className="relative">
                         <select 

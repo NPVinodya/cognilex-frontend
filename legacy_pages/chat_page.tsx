@@ -206,6 +206,14 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
   const [wipeColor, setWipeColor] = useState('bg-slate-950');
   const [shareToast, setShareToast] = useState<string | null>(null);
 
+  // Three-dots context menu state
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  // Delete confirm modal state
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
+  // Typing animation: tracks which bot message index is currently being typed out
+  const [typingIndex, setTypingIndex] = useState<number | null>(null);
+  const [displayedContents, setDisplayedContents] = useState<Record<number, string>>({});
+
   const toggleDarkMode = () => {
     if (isWiping) return;
     const targetIsDark = !isDarkMode;
@@ -227,18 +235,39 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
   };
 
   const renameSession = async (sid: string, newTitle: string) => {
-    if (!newTitle.trim()) return setEditingSessionId(null);
+    if (!newTitle.trim()) {
+      setEditingSessionId(null);
+      return;
+    }
     try {
-      const res = await fetch(chatApiUrl(`/session/${sid}/title?title=${encodeURIComponent(newTitle)}`), {
+      // Route through Next.js PATCH proxy instead of directly to backend
+      const res = await fetch(`/api/chat?session_id=${encodeURIComponent(sid)}&title=${encodeURIComponent(newTitle.trim())}`, {
         method: "PATCH"
       });
       if (res.ok) {
-        setSessions(prev => prev.map(s => s.id === sid ? { ...s, title: newTitle } : s));
+        setSessions(prev => prev.map(s => s.id === sid ? { ...s, title: newTitle.trim() } : s));
       }
     } catch (e) {
       console.error("Failed to rename:", e);
     }
     setEditingSessionId(null);
+  };
+
+  const handleDeleteSession = async (sid: string) => {
+    try {
+      const res = await fetch(`/api/chat?session_id=${encodeURIComponent(sid)}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSessions(prev => prev.filter(s => s.id !== sid));
+        if (activeSessionId === sid) {
+          setMessages([]);
+          setActiveSessionId(null);
+          router.push(`/${userId}/chat`);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to delete session:", e);
+    }
+    setConfirmDelete(null);
   };
 
   const handleShare = async () => {
@@ -444,7 +473,13 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
     stopSpeaking();
     try {
       const bot = await callChatAPI(q);
-      setMessages(p => [...p, bot]);
+      setMessages(p => {
+        const newMessages = [...p, bot];
+        const newIndex = newMessages.length - 1;
+        setTypingIndex(newIndex);
+        setDisplayedContents(prev => ({ ...prev, [newIndex]: "" }));
+        return newMessages;
+      });
       speak(bot.content);
     } catch (e: any) {
       setMessages(p => [...p, { role: "bot", content: e.message || "Backend Connection Failed.", time: "Now" }]);
@@ -453,8 +488,28 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
     }
   };
 
+  // ── Typing animation effect ────────────────────────────────────────────────
+  useEffect(() => {
+    if (typingIndex === null) return;
+    const fullText = messages[typingIndex]?.content || "";
+    let i = displayedContents[typingIndex]?.length || 0;
+    if (i >= fullText.length) {
+      setTypingIndex(null);
+      return;
+    }
+    const interval = setInterval(() => {
+      i += 8;
+      setDisplayedContents(prev => ({ ...prev, [typingIndex]: fullText.slice(0, i) }));
+      if (i >= fullText.length) {
+        clearInterval(interval);
+        setTypingIndex(null);
+      }
+    }, 4);
+    return () => clearInterval(interval);
+  }, [typingIndex, messages]);
 
-  useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [messages]);
+  useEffect(() => scrollRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, displayedContents]);
+
 
   return (
     <>
@@ -470,6 +525,39 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
           <div className="flex items-center gap-2.5 bg-slate-900 dark:bg-white/10 dark:backdrop-blur-xl text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10 text-sm font-bold">
             <span className="text-emerald-400">✓</span>
             {shareToast}
+          </div>
+        </div>
+      )}
+
+
+      {/* Delete confirm modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-rose-100 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-500 text-lg">🗑️</div>
+              <div>
+                <p className="font-black text-slate-900 dark:text-white text-sm">Delete Chat?</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 font-bold">This cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-5 bg-slate-50 dark:bg-slate-800 px-4 py-3 rounded-2xl border border-slate-100 dark:border-slate-700 line-clamp-2">
+              "{confirmDelete.title}"
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 text-xs font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteSession(confirmDelete.id)}
+                className="flex-1 py-2.5 text-xs font-black uppercase tracking-widest bg-rose-500 hover:bg-rose-600 text-white rounded-2xl transition-all shadow-lg shadow-rose-500/20 active:scale-95"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -526,42 +614,136 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
           {/* SCROLLABLE MIDDLE SECTION */}
           <div className="flex-1 overflow-y-auto no-scrollbar px-6 py-2">
             <div className="animate-in fade-in slide-in-from-left duration-500">
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {sessions.length > 0 ? (
                   sessions.map((s: any) => (
                     <div
                       key={s.id}
                       className={`
-                      p-3 rounded-xl cursor-pointer transition-all duration-200 border text-xs font-bold flex items-center justify-between group/item
-                      ${activeSessionId === s.id
+                        relative p-3 rounded-xl transition-all duration-200 border text-xs font-bold flex items-center justify-between group/item
+                        ${activeSessionId === s.id
                           ? "bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400"
                           : "border-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-600 dark:text-slate-400"}
-                    `}
+                      `}
                     >
                       {editingSessionId === s.id ? (
-                        <input
-                          autoFocus
-                          className="bg-transparent border-none outline-none w-full text-amber-600 dark:text-amber-400 font-bold"
-                          value={editingTitle}
-                          onChange={(e) => setEditingTitle(e.target.value)}
-                          onBlur={() => renameSession(s.id, editingTitle)}
-                          onKeyDown={(e) => e.key === "Enter" && renameSession(s.id, editingTitle)}
-                        />
+                        /* ── Inline rename input ── */
+                        <div className="flex items-center gap-2 w-full">
+                          <input
+                            autoFocus
+                            className="bg-transparent border-b-2 border-amber-500 outline-none flex-1 text-amber-600 dark:text-amber-400 font-bold py-0.5"
+                            value={editingTitle}
+                            onChange={(e) => setEditingTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                renameSession(s.id, editingTitle);
+                              }
+                              if (e.key === "Escape") {
+                                setEditingSessionId(null);
+                              }
+                            }}
+                          />
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); renameSession(s.id, editingTitle); }}
+                            className="shrink-0 p-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/40 text-amber-600 dark:text-amber-400 transition-all"
+                            title="Save"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </button>
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); setEditingSessionId(null); }}
+                            className="shrink-0 p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-all"
+                            title="Cancel"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                          </button>
+                        </div>
                       ) : (
                         <>
-                          <div className="truncate flex-1" onClick={() => router.push(`/${userId}/chat/${s.id}`)}>
-                            <span className="mr-2">📄</span> {s.title || "Untitled Legal Chat"}
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingSessionId(s.id);
-                              setEditingTitle(s.title || "");
+                          {/* Session title */}
+                          <div
+                            className="truncate flex-1 min-w-0 pr-1 cursor-pointer"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              router.push(`/${userId}/chat/${s.id}`);
                             }}
-                            className="opacity-0 group-hover/item:opacity-100 p-1 hover:bg-amber-500/20 rounded transition-all ml-1"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                          </button>
+                            <span className="mr-1.5">📄</span>
+                            {s.title || "Untitled Legal Chat"}
+                          </div>
+
+                          {/* Three-dots button + inline dropdown */}
+                          <div className="relative shrink-0">
+                            <button
+                              id={`session-menu-btn-${s.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuId(openMenuId === s.id ? null : s.id);
+                              }}
+                              className={`p-1.5 rounded-lg transition-all
+                                hover:bg-amber-500/20 hover:text-amber-500
+                                ${openMenuId === s.id
+                                  ? 'opacity-100 bg-amber-500/10 text-amber-500'
+                                  : 'opacity-0 group-hover/item:opacity-100'}`}
+                              title="More options"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="5" cy="12" r="2"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <circle cx="19" cy="12" r="2"/>
+                              </svg>
+                            </button>
+
+                            {/* Dropdown — rendered inline, no portal needed */}
+                            {openMenuId === s.id && (
+                              <div
+                                className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+                                style={{ zIndex: 9999 }}
+                              >
+                                {/* Rename option */}
+                                <button
+                                  onMouseDown={(e) => {
+                                    e.preventDefault(); // prevent blur stealing focus before click registers
+                                    e.stopPropagation();
+                                    setOpenMenuId(null);
+                                    setEditingTitle(s.title || "");
+                                    setEditingSessionId(s.id);
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-black text-slate-700 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition-all uppercase tracking-widest"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                  </svg>
+                                  Rename
+                                </button>
+                                <div className="h-px bg-slate-100 dark:bg-slate-700/50 mx-3" />
+                                {/* Delete option */}
+                                <button
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setOpenMenuId(null);
+                                    setConfirmDelete({ id: s.id, title: s.title || "Untitled Legal Chat" });
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-black text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all uppercase tracking-widest"
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                                  </svg>
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
@@ -769,21 +951,33 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
                   <div className={`text-[15px] md:text-[16px] leading-relaxed tracking-wide ${msg.role === "bot" ? "pl-3 md:pl-4" : ""}`}>
                     {msg.role === "user" ? (
                       <p className="whitespace-pre-wrap">{msg.content}</p>
-                    ) : (
-                      <ReactMarkdown components={{
-                        p: ({ ...p }) => <p className="mb-5 last:mb-0" {...p} />,
-                        strong: ({ ...p }) => <strong className="font-black text-amber-700 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-1.5 py-0.5 rounded-lg border border-amber-500/20" {...p} />,
-                        h3: ({ ...p }) => <h3 className="text-xl md:text-2xl font-playfair font-black text-slate-900 dark:text-white mb-4 mt-2 tracking-tight" {...p} />,
-                        ul: ({ ...p }) => <ul className="space-y-3 mb-5 list-none pl-1" {...p} />,
-                        li: ({ ...p }) => <li className="flex items-start gap-4" {...p}><span className="mt-2.5 w-2 h-2 rounded-full bg-amber-600 shadow-[0_0_10px_rgba(217,119,6,0.5)] shrink-0"></span><div className="flex-1">{(p as any).children}</div></li>,
-                        blockquote: ({ ...p }) => <blockquote className="border-l-4 border-amber-500/50 bg-amber-500/5 dark:bg-amber-500/5 pl-5 py-4 italic text-slate-600 dark:text-slate-400 rounded-r-2xl mb-5" {...p} />,
-                      }}>
-                        {msg.content}
-                      </ReactMarkdown>
-                    )}
+                    ) : (() => {
+                      const isTyping = typingIndex === i;
+                      const displayText = isTyping
+                        ? (displayedContents[i] ?? "")
+                        : (displayedContents[i] ?? msg.content);
+                      return (
+                        <>
+                          <ReactMarkdown components={{
+                            p: ({ ...p }) => <p className="mb-5 last:mb-0" {...p} />,
+                            strong: ({ ...p }) => <strong className="font-black text-amber-700 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-400/10 px-1.5 py-0.5 rounded-lg border border-amber-500/20" {...p} />,
+                            h3: ({ ...p }) => <h3 className="text-xl md:text-2xl font-playfair font-black text-slate-900 dark:text-white mb-4 mt-2 tracking-tight" {...p} />,
+                            ul: ({ ...p }) => <ul className="space-y-3 mb-5 list-none pl-1" {...p} />,
+                            li: ({ ...p }) => <li className="flex items-start gap-4" {...p}><span className="mt-2.5 w-2 h-2 rounded-full bg-amber-600 shadow-[0_0_10px_rgba(217,119,6,0.5)] shrink-0"></span><div className="flex-1">{(p as any).children}</div></li>,
+                            blockquote: ({ ...p }) => <blockquote className="border-l-4 border-amber-500/50 bg-amber-500/5 dark:bg-amber-500/5 pl-5 py-4 italic text-slate-600 dark:text-slate-400 rounded-r-2xl mb-5" {...p} />,
+                          }}>
+                            {displayText}
+                          </ReactMarkdown>
+                          {/* Blinking cursor while typing */}
+                          {isTyping && (
+                            <span className="inline-block w-0.5 h-4 bg-amber-500 ml-0.5 align-middle animate-[blink_0.8s_step-end_infinite] rounded-full" />
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
 
-                  {msg.role === "bot" && ((msg.sources && msg.sources.length > 0) || (msg.related_cases && msg.related_cases.length > 0)) && (
+                  {msg.role === "bot" && !( typingIndex === i) && ((msg.sources && msg.sources.length > 0) || (msg.related_cases && msg.related_cases.length > 0)) && (
                     <div className="mt-4 space-y-4 border-t border-slate-200 pt-4 pl-3 dark:border-white/10 md:pl-4">
 
                       {msg.related_cases && msg.related_cases.length > 0 && (
@@ -805,7 +999,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
                 {/* Meta row */}
                 <div className="flex items-center gap-4 mt-3 px-6">
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em]">{msg.time}</span>
-                  {msg.role === "bot" && msg.latency && <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">⚡ {msg.latency}</span>}
+                  {msg.role === "bot" && msg.latency && typingIndex !== i && <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">⚡ {msg.latency}</span>}
 
                 </div>
               </div>

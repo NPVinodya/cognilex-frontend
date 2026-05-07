@@ -247,13 +247,13 @@ function CheckoutContent() {
 
         {currentStep === 1 ? (
           /* ── STEP 1: TWO-COLUMN LAYOUT ── */
-          <div className="grid lg:grid-cols-12 gap-8 items-start">
+          <div className="flex flex-col-reverse lg:grid lg:grid-cols-12 gap-8 items-start">
 
             {/* Left: Details Form */}
             <div className="lg:col-span-7">
               <div className="animate-in slide-in-from-left-4 duration-500">
                 <div className="bg-white rounded-[2rem] shadow-2xl border border-slate-200/60 overflow-hidden">
-                  <div className="p-8 md:p-10 text-left">
+                  <div className="p-6 sm:p-8 md:p-10 text-left">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2 font-outfit">
                       <User className="w-6 h-6 text-amber-600" />
                       Your Details
@@ -357,7 +357,7 @@ function CheckoutContent() {
 
 
             {/* BOTTOM: 2-Column Grid */}
-            <div className="grid lg:grid-cols-12 gap-6 items-start">
+            <div className="flex flex-col-reverse lg:grid lg:grid-cols-12 gap-6 items-start">
 
               {/* LEFT: Unified Secure Payment (7 cols) */}
               <div className="lg:col-span-7 space-y-6">
@@ -372,7 +372,7 @@ function CheckoutContent() {
                     />
                   </div>
 
-                  <div className="p-8 md:p-12 relative z-10 flex flex-col items-center text-center">
+                  <div className="p-6 sm:p-8 md:p-12 relative z-10 flex flex-col items-center text-center">
                     <div className="w-16 h-16 bg-amber-600/10 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
                       <ShieldCheck size={32} className="text-amber-600" />
                     </div>
@@ -385,7 +385,7 @@ function CheckoutContent() {
                     </p>
 
                     {/* Integrated 3D Stacked Cards (Scaled for internal box) */}
-                    <div className="flex justify-center items-center h-48 group cursor-pointer overflow-visible scale-90 mb-6">
+                    <div className="flex justify-center items-center h-48 group cursor-pointer overflow-visible scale-75 sm:scale-90 md:scale-100 mb-6 -mx-4 sm:mx-0">
                       <div className="relative w-[320px] h-[200px] overflow-visible" style={{ perspective: "800px" }}>
                         {/* Back card */}
                         <div className="absolute inset-0 w-[300px] h-[180px] rounded-2xl border border-slate-300/30 transition-all duration-700 group-hover:-translate-y-7"
@@ -441,7 +441,7 @@ function CheckoutContent() {
                       </button>
 
                       {/* Trust Icons Grid — Matching the Image */}
-                      <div className="flex flex-wrap justify-center items-center gap-8 pt-12 px-4">
+                      <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6 md:gap-8 pt-10 md:pt-12 px-2 sm:px-4">
                         {/* VISA - Robust Icon */}
                         <div className="flex items-center gap-1.5 opacity-90 transition-all hover:scale-110">
                           <div className="w-11 h-7 bg-[#1A1F71] rounded-sm flex items-center justify-center p-1 shadow-sm">
@@ -556,7 +556,7 @@ function CheckoutContent() {
               <div className="absolute bottom-1/4 left-1/2 w-2 h-2 bg-purple-400 rounded-full animate-pulse opacity-20"></div>
             </div>
 
-            <div className="bg-white/85 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-slate-200/60 overflow-hidden relative p-8 md:p-12 flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
+            <div className="bg-white/85 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-slate-200/60 overflow-hidden relative p-6 sm:p-8 md:p-12 flex flex-col items-center text-center animate-in zoom-in-95 duration-700">
               {/* Underlay glow from Step 2 for continuity */}
               <div className="absolute inset-0 z-0 opacity-20 blur-3xl scale-125">
                 <img src="/payment-bg.png" alt="" className="w-full h-full object-cover" />
@@ -572,7 +572,7 @@ function CheckoutContent() {
                   Your legal consultation with <span className="font-bold text-slate-900">{lawyer.fullName}</span> has been successfully scheduled. A confirmation has been sent to your email.
                 </p>
 
-                <div className="w-full bg-slate-50/50 rounded-3xl border border-slate-100 p-8 mb-10 space-y-4 text-left">
+                <div className="w-full bg-slate-50/50 rounded-3xl border border-slate-100 p-5 sm:p-8 mb-10 space-y-4 text-left">
                   <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-amber-500/10 rounded-lg flex items-center justify-center"><Calendar className="w-4 h-4 text-amber-600" /></div>

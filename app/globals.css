@@ -227,3 +227,16 @@
   background: radial-gradient(circle at center, transparent 30%, rgba(22, 163, 74, 0.03) 100%);
   z-index: 5;
 }
+
+/* Typing cursor blink animation */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* PayHere Modal Fixes for Mobile */
+#payhere-modal {
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
