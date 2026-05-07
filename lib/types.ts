@@ -32,6 +32,8 @@ export interface Message {
   sender: 'user' | 'bot';
   timestamp: Date;
   citation?: Citation;
+  sources?: string[];
+  relatedCases?: string[];
 }
 
 export interface Citation {
