@@ -157,3 +157,37 @@ export async function PATCH(req: Request) {
   }
 }
 
+export async function DELETE(req: Request) {
+  try {
+    if (!isAuthenticatedFromRequest(req)) {
+      return Response.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const session_id = searchParams.get('session_id');
+
+    if (!session_id) {
+      return Response.json({ message: 'session_id is required' }, { status: 400 });
+    }
+
+    const BASE_API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+    const endpoint = `${BASE_API_URL}/chat/session/${encodeURIComponent(session_id)}`;
+    console.log(`[Proxy DELETE] Deleting session: ${endpoint}`);
+
+    const restRes = await fetch(endpoint, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!restRes.ok) {
+      const errBody = await restRes.json().catch(() => ({}));
+      return Response.json({ message: errBody.detail || 'Failed to delete session' }, { status: restRes.status });
+    }
+
+    return Response.json({ message: 'Session deleted' }, { status: 200 });
+
+  } catch (err: any) {
+    console.error('[/api/chat] Proxy DELETE error:', err.message);
+    return Response.json({ message: 'Connection failed' }, { status: 502 });
+  }
+}
