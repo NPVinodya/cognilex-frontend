@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
-  Users, Scale, Shield, Bell, Menu, X, LayoutDashboard, Clock, LogOut, MessageSquare, Settings, Wallet, ChartPie
+  Users, Scale, Shield, Bell, Menu, X, LayoutDashboard, Clock, LogOut, MessageSquare, Settings, Wallet, ChartPie, Database
 } from 'lucide-react';
 import { clearAdminSession } from '@/lib/adminSession';
 
@@ -13,11 +13,13 @@ const SIDEBAR_ITEMS = [
   { id: 'feedback', name: 'Customer Feedback', icon: MessageSquare, href: '/adminDashboard/feedback' },
   { id: 'users', name: 'User Management', icon: Users, href: '/adminDashboard/users' },
   { id: 'admins', name: 'Admin Management', icon: Shield, href: '/adminDashboard/admins' },
+  { id: 'rag', name: 'RAG Management', icon: Database, href: '/adminDashboard/rag-management' },
   { id: 'lawyers', name: 'Lawyer Directory', icon: Scale, href: '/adminDashboard/lawyers' },
   { id: 'approvals', name: 'Pending Approvals', icon: Clock, href: '/adminDashboard/approvals' },
   { id: 'finance', name: 'Financial Analytics', icon: Wallet, href: '/adminDashboard/finance' },
   { id: 'settings', name: 'System Settings', icon: Settings, href: '/adminDashboard/settings' },
   { id: 'analytics', name: 'Analytics', icon: ChartPie, href: '/adminDashboard/analytics' },
+
 ];
 
 export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
