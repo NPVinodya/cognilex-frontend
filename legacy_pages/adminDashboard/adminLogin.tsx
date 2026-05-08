@@ -31,7 +31,18 @@ export default function AdminLoginPage() {
 
             router.push('/adminDashboard');
         } catch (err: any) {
-            setError(err.response?.data?.detail || 'Admin authentication failed. Please check your credentials.');
+            const detail = err.response?.data?.detail;
+            if (typeof detail === 'string') {
+                setError(detail);
+            } else if (Array.isArray(detail)) {
+                // Handle Pydantic validation errors
+                const messages = detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+                setError(messages);
+            } else if (typeof detail === 'object' && detail !== null) {
+                setError(JSON.stringify(detail));
+            } else {
+                setError('Admin authentication failed. Please check your credentials.');
+            }
         } finally {
             setLoading(false);
         }
