@@ -5,9 +5,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 // ── DELETE /api/rag/documents/[fileType]/[filename] ───────────────────────────
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { fileType: string; filename: string } }
+  { params }: { params: Promise<{ fileType: string; filename: string }> }
 ) {
-  const { fileType, filename } = params;
+  const { fileType, filename } = await params;
 
   if (!['acts', 'cases'].includes(fileType)) {
     return NextResponse.json({ error: "fileType must be 'acts' or 'cases'." }, { status: 400 });
