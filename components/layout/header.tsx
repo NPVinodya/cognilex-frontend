@@ -254,7 +254,13 @@ export default function Header() {
               <div className="pt-4 border-t border-white/20 space-y-2">
                 {isAuthenticated ? (
                   <>
-                    <div className="flex items-center space-x-3 px-4 py-3 bg-white/10 rounded-lg">
+                    <div 
+                      onClick={() => {
+                        router.push(chatHref);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="flex items-center space-x-3 px-4 py-3 bg-white/10 rounded-lg cursor-pointer hover:bg-white/20 transition-all duration-300"
+                    >
                       <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
                         <span className="text-amber-600 font-bold text-sm">
                           {user?.name?.charAt(0).toUpperCase()}
