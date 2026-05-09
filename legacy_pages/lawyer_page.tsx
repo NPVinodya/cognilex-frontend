@@ -105,7 +105,7 @@ export default function LawyersPage() {
         <div className="grid md:grid-cols-4 gap-6">
           {/* Filters Sidebar */}
           <aside className="md:col-span-1">
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-md border border-gray-100 dark:border-slate-800 sticky top-4">
+            <div className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-xl shadow-md border border-gray-100 dark:border-slate-800 md:sticky md:top-4">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-slate-100">Filters</h3>
 
               <div className="mb-4">
@@ -117,7 +117,7 @@ export default function LawyersPage() {
                 <select
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value as Specialization | "")}
-                  className="w-full px-4 py-2 border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 rounded-lg focus:outline-none focus:border-blue-500 dark:focus:border-amber-500"
+                  className="w-full px-3 md:px-4 py-2 border-2 border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 rounded-lg focus:outline-none focus:border-blue-500 dark:focus:border-amber-500"
                 >
                   <option value="">All Specializations</option>
                   {SPECIALIZATIONS.map((spec) => (

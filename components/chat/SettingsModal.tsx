@@ -23,6 +23,7 @@ export default function SettingsModal({
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const [isExportingChats, setIsExportingChats] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>((currentUser as any)?.avatar_url || null);
@@ -115,6 +116,92 @@ export default function SettingsModal({
     }
   };
 
+  const handleExportChatHistory = async () => {
+    if (!currentUser?.email) return;
+    setIsExportingChats(true);
+    
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+
+      const doc = new jsPDF();
+      
+      // Fetch all sessions
+      const res = await axios.get(`/api/chat?user_id=${encodeURIComponent(currentUser.email)}`);
+      const sessions = res.data.sessions || [];
+      
+      if (sessions.length === 0) {
+        alert("No chat history found to export.");
+        setIsExportingChats(false);
+        return;
+      }
+
+      doc.setFontSize(22);
+      doc.setTextColor(217, 119, 6);
+      doc.text("CogniLex Chat History Archive", 14, 20);
+
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`User: ${currentUser?.name || currentUser?.email}`, 14, 28);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 33);
+      
+      let currentY = 45;
+
+      // Loop through sessions and build the PDF
+      for (const session of sessions) {
+        // Fetch session history
+        const histRes = await axios.get(`/api/chat?session_id=${encodeURIComponent(session.id)}`);
+        const messages = histRes.data.messages || [];
+        
+        if (messages.length === 0) continue;
+
+        // If we're too close to the bottom, add a page before starting a new session
+        if (currentY > 250) {
+          doc.addPage();
+          currentY = 20;
+        }
+
+        // Add a new section for this session
+        doc.setFontSize(16);
+        doc.setTextColor(51, 51, 51);
+        doc.text(`Session: ${session.title || "Untitled"}`, 14, currentY);
+        doc.setFontSize(9);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`Date: ${new Date(session.updated_at || new Date()).toLocaleString()}`, 14, currentY + 5);
+        currentY += 10;
+
+        const tableData = messages.map((m: any) => {
+          let contentStr = typeof m.content === "string" ? m.content : JSON.stringify(m.content);
+          return [m.role === "user" ? "You" : "CogniLex AI", contentStr];
+        });
+
+        autoTable(doc, {
+          startY: currentY,
+          head: [["Speaker", "Message"]],
+          body: tableData,
+          theme: "grid",
+          styles: { fontSize: 9, cellPadding: 4, overflow: 'linebreak' },
+          columnStyles: {
+            0: { cellWidth: 30, fontStyle: 'bold' },
+            1: { cellWidth: 'auto' }
+          },
+          headStyles: { fillColor: [217, 119, 6] },
+          margin: { bottom: 20 }
+        });
+
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+      }
+
+      doc.save(`CogniLex_ChatArchive_${new Date().toISOString().split('T')[0]}.pdf`);
+
+    } catch (err) {
+      console.error("Export failed:", err);
+      alert("Failed to export chat history. Please try again.");
+    } finally {
+      setIsExportingChats(false);
+    }
+  };
+
   const handleSavePreferences = async () => {
     if (!currentUser?.email) return;
     setIsSavingPreferences(true);
@@ -153,19 +240,22 @@ export default function SettingsModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] w-full max-w-2xl h-[540px] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
-        <div className="flex-1 flex overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] w-full max-w-2xl h-[85vh] md:h-[540px] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Sidebar */}
-          <div className="w-52 border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col bg-slate-50 dark:bg-slate-900">
-            <button onClick={onClose} className="mb-6 p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition w-fit bg-slate-200 dark:bg-slate-800/50 hover:bg-slate-300 dark:hover:bg-slate-800 rounded-lg">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            </button>
-            <nav className="space-y-1">
-              {["General", "Notifications", "Personalization", "Security", "Account", "Apps & Data"].map((tab) => (
+          <div className="w-full md:w-52 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col bg-slate-50 dark:bg-slate-900 shrink-0">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <span className="md:hidden font-bold text-slate-800 dark:text-white ml-2">Settings</span>
+              <button onClick={onClose} className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition w-fit bg-slate-200 dark:bg-slate-800/50 hover:bg-slate-300 dark:hover:bg-slate-800 rounded-lg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto no-scrollbar pb-2 md:pb-0">
+              {["General", "Security", "Account", "Apps & Data"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold tracking-wide transition ${activeTab === tab ? "bg-amber-100 dark:bg-slate-800 text-amber-600 dark:text-amber-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800/50"}`}
+                  className={`shrink-0 w-auto md:w-full flex items-center justify-center md:justify-start gap-3 px-4 md:px-3 py-2.5 rounded-xl text-xs font-bold tracking-wide transition ${activeTab === tab ? "bg-amber-100 dark:bg-slate-800 text-amber-600 dark:text-amber-500 shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800/50"}`}
                 >
                   {tab}
                 </button>
@@ -174,8 +264,8 @@ export default function SettingsModal({
           </div>
           
           {/* Content Area */}
-          <div className="flex-1 p-8 overflow-y-auto no-scrollbar bg-white dark:bg-slate-900">
-            <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-8 tracking-tight">{activeTab}</h2>
+          <div className="flex-1 p-5 md:p-8 overflow-y-auto no-scrollbar bg-white dark:bg-slate-900">
+            <h2 className="hidden md:block text-2xl font-black text-slate-800 dark:text-white mb-8 tracking-tight">{activeTab}</h2>
             
             {activeTab === "General" && (
               <div className="space-y-6">
@@ -205,49 +295,6 @@ export default function SettingsModal({
               </div>
             )}
 
-            {activeTab === "Notifications" && (
-              <div className="space-y-6">
-                {[
-                  { title: "Email Summaries", desc: "Receive daily or weekly legal chat summaries" },
-                  { title: "Browser Alerts", desc: "Get notified when a new consultation starts" },
-                  { title: "Product Updates", desc: "News and new features from CogniLex" }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
-                    <div>
-                      <span className="block text-sm font-bold text-slate-800 dark:text-slate-200">{item.title}</span>
-                      <span className="text-[11px] text-slate-500">{item.desc}</span>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked={i === 0} />
-                      <div className="w-9 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === "Personalization" && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
-                  <div>
-                    <span className="block text-sm font-bold text-slate-800 dark:text-slate-200">Chat Bubble Density</span>
-                    <span className="text-[11px] text-slate-500">Adjust the spacing in legal chats</span>
-                  </div>
-                  <select className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 dark:text-white outline-none focus:border-amber-500/50 transition">
-                    <option>Comfortable</option><option>Compact</option>
-                  </select>
-                </div>
-                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-5">
-                  <div>
-                    <span className="block text-sm font-bold text-slate-800 dark:text-slate-200">Typography Scale</span>
-                    <span className="text-[11px] text-slate-500">Make text larger or smaller</span>
-                  </div>
-                  <select className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 dark:text-white outline-none focus:border-amber-500/50 transition">
-                    <option>Normal (14px)</option><option>Large (16px)</option><option>Extra Large (18px)</option>
-                  </select>
-                </div>
-              </div>
-            )}
 
             {activeTab === "Security" && (
               <div className="space-y-6">
@@ -340,10 +387,18 @@ export default function SettingsModal({
               <div className="space-y-6">
                 <div className="border-b border-slate-200 dark:border-slate-800 pb-5">
                   <span className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">Export Chat History</span>
-                  <span className="text-[11px] text-slate-500 max-w-sm block mb-4">Download all your legal consultations and AI answers as a secure PDF or CSV file.</span>
-                  <button className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-2">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                    Download Archive
+                  <span className="text-[11px] text-slate-500 max-w-sm block mb-4">Download all your legal consultations and AI answers as a secure PDF file.</span>
+                  <button 
+                    onClick={handleExportChatHistory}
+                    disabled={isExportingChats}
+                    className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isExportingChats ? (
+                      <div className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    )}
+                    {isExportingChats ? "Generating PDF..." : "Download Archive"}
                   </button>
                 </div>
                 <div>

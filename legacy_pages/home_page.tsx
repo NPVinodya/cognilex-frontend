@@ -17,18 +17,18 @@ export default function HomePage() {
 
         <div className="relative bg-slate-900 pt-20 pb-32 lg:pt-28 lg:pb-40 overflow-hidden z-0">
           {/* Animated Legal Icons Background */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-20 left-10 animate-float">
-              <Scale className="w-32 h-32 text-white" />
+          <div className="absolute inset-0 opacity-5 pointer-events-none overflow-hidden">
+            <div className="absolute top-12 left-4 md:top-20 md:left-10 animate-float">
+              <Scale className="w-16 h-16 md:w-32 md:h-32 text-white" />
             </div>
-            <div className="absolute top-20 right-20 animate-float-delayed">
-              <Gavel className="w-32 h-32 text-white" />
+            <div className="absolute top-12 right-4 md:top-20 md:right-20 animate-float-delayed">
+              <Gavel className="w-16 h-16 md:w-32 md:h-32 text-white" />
             </div>
-            <div className="absolute bottom-32 left-40 animate-float">
-              <Shield className="w-32 h-32 text-white" />
+            <div className="absolute bottom-28 left-4 md:bottom-32 md:left-40 animate-float">
+              <Shield className="w-16 h-16 md:w-32 md:h-32 text-white" />
             </div>
-            <div className="absolute bottom-32 right-50 animate-pulse">
-              <Award className="w-32 h-32 text-white" />
+            <div className="absolute bottom-24 right-4 md:bottom-32 md:right-32 animate-pulse">
+              <Award className="w-16 h-16 md:w-32 md:h-32 text-white" />
             </div>
           </div>
           {/* Subtle Background Pattern */}

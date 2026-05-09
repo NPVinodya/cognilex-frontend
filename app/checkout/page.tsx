@@ -6,8 +6,10 @@ import {
   User, Mail, Phone, Calendar, Clock, ArrowLeft,
   CreditCard, ShieldCheck, Lock, Building, Smartphone,
   Wallet, CheckCircle, Loader2, Info, ArrowRight, ShieldAlert,
-  Shield, Check, Globe, MapPin, Scale, AlertCircle
+  Shield, Check, Globe, MapPin, Scale, AlertCircle, Download, Send
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import Header from "@/components/layout/header";
 import PaymentStepper from "@/components/checkout/PaymentStepper";
 import Script from "next/script";
@@ -32,6 +34,9 @@ function CheckoutContent() {
     phone: "",
     notes: ""
   });
+
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,6 +88,7 @@ function CheckoutContent() {
     setTimeout(() => {
       setIsProcessing(false);
       setIsBooked(true);
+      setCurrentStep(3);
     }, 2000);
   };
 
@@ -149,6 +155,7 @@ function CheckoutContent() {
 
         setIsProcessing(false);
         setIsBooked(true);
+        setCurrentStep(3);
       };
 
       (window as any).payhere.onDismissed = function onDismissed() {
@@ -164,6 +171,92 @@ function CheckoutContent() {
     } catch (error) {
       console.error("PayHere Initiation Error:", error);
       setIsProcessing(false);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const consultationFeeVal = lawyer?.consultationFee || 2500;
+    const totalVal = consultationFeeVal + 200;
+
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(217, 119, 6); // amber-600
+    doc.text("CogniLex", 105, 20, { align: "center" });
+
+    doc.setFontSize(16);
+    doc.setTextColor(51, 51, 51);
+    doc.text("Payment Receipt", 105, 30, { align: "center" });
+
+    doc.setLineWidth(0.5);
+    doc.line(20, 35, 190, 35);
+
+    // Details
+    doc.setFontSize(12);
+    doc.text(`Client Name: ${formData.fullName || "User"}`, 20, 45);
+    doc.text(`Email: ${formData.email}`, 20, 52);
+    doc.text(`Phone: ${formData.phone}`, 20, 59);
+
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 45);
+    doc.text(`Receipt No: #${Math.floor(Math.random() * 1000000)}`, 140, 52);
+
+    // Table
+    autoTable(doc, {
+      startY: 70,
+      head: [["Description", "Amount (LKR)"]],
+      body: [
+        [`Legal Consultation with ${lawyer?.fullName}`, consultationFeeVal.toLocaleString()],
+        ["Service Fee", "200"],
+      ],
+      foot: [["Total Paid", totalVal.toLocaleString()]],
+      theme: "striped",
+      headStyles: { fillColor: [217, 119, 6] },
+      footStyles: { fillColor: [51, 51, 51] }
+    });
+
+    // Footer
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    doc.setFontSize(10);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Thank you for using CogniLex.", 105, finalY + 20, { align: "center" });
+
+    doc.save("CogniLex_Receipt.pdf");
+  };
+
+  const handleSendEmail = async () => {
+    setIsSendingEmail(true);
+    try {
+      const consultationFeeVal = lawyer?.consultationFee || 2500;
+      const totalVal = consultationFeeVal + 200;
+
+      const payload = {
+        email: formData.email,
+        clientName: formData.fullName,
+        lawyerName: lawyer?.fullName,
+        date: slot.date,
+        time: slot.time,
+        consultationFee: consultationFeeVal,
+        serviceFee: 200,
+        totalAmount: totalVal
+      };
+
+      const res = await fetch("/api/payment/send-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setEmailSent(true);
+      } else {
+        alert("Failed to send email. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while sending the email.");
+    } finally {
+      setIsSendingEmail(false);
     }
   };
 
@@ -201,24 +294,6 @@ function CheckoutContent() {
 
   const consultationFee = (lawyer?.consultationFee || 2500);
   const totalAmount = consultationFee + 200;
-
-  if (currentStep === 3 || isBooked) {
-    return (
-      <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans">
-        <Header />
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 border border-slate-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-500">
-            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-8 shadow-inner ring-8 ring-emerald-50">
-              <CheckCircle className="w-12 h-12 text-emerald-600" />
-            </div>
-            <h2 className="text-3xl font-black text-slate-900 mb-2 tracking-tight font-outfit">Booking Confirmed</h2>
-            <p className="text-slate-500 font-medium mb-10 leading-relaxed font-inter">Your legal consultation with <span className="font-bold text-slate-900">{lawyer?.fullName}</span> has been successfully scheduled.</p>
-            <button onClick={() => router.push("/lawyerDashboard/dashboard")} className="w-full h-14 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-black transition-all active:scale-95 font-inter uppercase tracking-widest text-sm">Go to Dashboard</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans text-left">
@@ -596,12 +671,34 @@ function CheckoutContent() {
                   </div>
                 </div>
 
+                <div className="w-full flex flex-col sm:flex-row gap-4 mb-8">
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="flex-1 h-[50px] bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 font-inter text-[14px]"
+                  >
+                    <Download className="w-4 h-4" /> Download Receipt (PDF)
+                  </button>
+                  <button
+                    onClick={handleSendEmail}
+                    disabled={isSendingEmail || emailSent}
+                    className={`flex-1 h-[50px] text-white rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2 font-inter text-[14px] ${emailSent ? "bg-emerald-600 hover:bg-emerald-700" : "bg-amber-600 hover:bg-amber-700 disabled:opacity-70"}`}
+                  >
+                    {isSendingEmail ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Sending...</>
+                    ) : emailSent ? (
+                      <><CheckCircle className="w-4 h-4" /> Receipt Sent</>
+                    ) : (
+                      <><Send className="w-4 h-4" /> Send Email Receipt</>
+                    )}
+                  </button>
+                </div>
+
                 <button
                   onClick={() => router.push("/")}
                   className="group relative w-full h-[56px] bg-[#121212] hover:bg-black text-white rounded-full font-bold border border-amber-500/30 hover:border-amber-500 shadow-xl transition-all active:scale-[0.98] font-inter text-[16px] flex items-center justify-center overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                  GO TO DASHBOARD
+                  RETURN HOME
                 </button>
 
                 <p className="mt-8 text-[11px] text-slate-400 font-medium flex items-center gap-2">
