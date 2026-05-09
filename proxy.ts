@@ -58,6 +58,12 @@ export function isAuthenticatedFromNextRequestCookies(cookies: {
   return cookies.get(AUTH_COOKIES.isAuthenticated)?.value === "true";
 }
 
+export function isAdminAuthenticatedFromNextRequestCookies(cookies: {
+  get(name: string): { value: string } | undefined;
+}): boolean {
+  return cookies.get(AUTH_COOKIES.adminIsAuthenticated)?.value === "true";
+}
+
 export function logoutSetCookieHeaders(): string[] {
   const expires = "Thu, 01 Jan 1970 00:00:00 GMT";
   const base = `Path=/; Expires=${expires}; Max-Age=0`;
@@ -72,7 +78,21 @@ export function logoutSetCookieHeaders(): string[] {
 }
 
 export function middleware(req: NextRequest) {
-  if (!isAuthenticatedFromNextRequestCookies(req.cookies)) {
+  const path = req.nextUrl.pathname;
+
+  // Admin protection
+  if ((path.startsWith("/admin") || path.startsWith("/adminDashboard")) && !path.startsWith("/admin/login")) {
+    if (!isAdminAuthenticatedFromNextRequestCookies(req.cookies)) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/admin/login";
+      url.searchParams.set("next", req.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // General user protection
+  if (!path.startsWith("/admin/login") && !isAuthenticatedFromNextRequestCookies(req.cookies)) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", req.nextUrl.pathname);
@@ -83,7 +103,14 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/chat/:path*"],
+  matcher: [
+    "/chat/:path*", 
+    "/lawyer/:path*", 
+    "/admin", 
+    "/admin/:path*", 
+    "/adminDashboard", 
+    "/adminDashboard/:path*"
+  ],
 };
 
 export default middleware;
