@@ -12,8 +12,11 @@ import {
   Search,
   Scale,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useRouter } from "next/navigation";
 
 interface Appointment {
@@ -123,6 +126,53 @@ export default function MyAppointmentsPage() {
     return 'bg-slate-100 text-slate-600';
   };
 
+  const handleDownloadReceipt = (apt: Appointment) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(217, 119, 6); // amber-600
+    doc.text("CogniLex", 105, 20, { align: "center" });
+
+    doc.setFontSize(16);
+    doc.setTextColor(51, 51, 51);
+    doc.text("Payment Receipt", 105, 30, { align: "center" });
+
+    doc.setLineWidth(0.5);
+    doc.line(20, 35, 190, 35);
+
+    // Details
+    doc.setFontSize(12);
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    doc.text(`Client Name: ${user.name || user.email || "User"}`, 20, 45);
+    doc.text(`Email: ${user.email || ""}`, 20, 52);
+
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 45);
+    doc.text(`Receipt No: #${apt.id.split('-')[1] || Math.floor(Math.random() * 1000000)}`, 140, 52);
+
+    // Table
+    autoTable(doc, {
+      startY: 70,
+      head: [["Description", "Amount (LKR)"]],
+      body: [
+        [`Legal Consultation with ${apt.lawyerName}`, "2,500"],
+        ["Service Fee", "200"],
+      ],
+      foot: [["Total Paid", "2,700"]],
+      theme: "striped",
+      headStyles: { fillColor: [217, 119, 6] },
+      footStyles: { fillColor: [51, 51, 51] }
+    });
+
+    // Footer
+    const finalY = (doc as any).lastAutoTable.finalY || 100;
+    doc.setFontSize(10);
+    doc.setTextColor(150, 150, 150);
+    doc.text("Thank you for using CogniLex.", 105, finalY + 20, { align: "center" });
+
+    doc.save(`CogniLex_Receipt_${apt.id.split('-')[1] || apt.id}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] font-sans flex flex-col">
       <Header />
@@ -209,7 +259,16 @@ export default function MyAppointmentsPage() {
                         {getStatusIcon(apt.status)}
                         {apt.status}
                       </span>
-                      <p className="text-xs text-slate-400 font-medium uppercase tracking-tighter">ID: {apt.id.split('-')[1] || apt.id}</p>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleDownloadReceipt(apt)}
+                          className="p-1 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 rounded-md transition-colors border border-transparent hover:border-amber-200"
+                          title="Download Receipt"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <p className="text-xs text-slate-400 font-medium uppercase tracking-tighter">ID: {apt.id.split('-')[1] || apt.id}</p>
+                      </div>
                     </div>
 
                     <div className="col-span-1 md:col-span-4 flex items-center gap-4">
@@ -247,7 +306,14 @@ export default function MyAppointmentsPage() {
                       <span className="leading-snug truncate md:whitespace-normal">{apt.location}</span>
                     </div>
 
-                    <div className="col-span-1 md:col-span-2 hidden md:flex items-center justify-end">
+                    <div className="col-span-1 md:col-span-2 hidden md:flex items-center justify-end gap-3">
+                      <button 
+                        onClick={() => handleDownloadReceipt(apt)}
+                        className="p-1.5 text-slate-400 hover:text-amber-600 bg-slate-50 hover:bg-amber-50 rounded-lg transition-colors border border-transparent hover:border-amber-200"
+                        title="Download Receipt"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest border ${getStatusStyle(apt.status)}`}>
                         {getStatusIcon(apt.status)}
                         {apt.status}

@@ -59,18 +59,18 @@ export default function Footer() {
   return (
     <footer className="bg-slate-900 border-t border-slate-800 text-slate-200">
       {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
 
           {/* Company Info */}
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             <div className="flex items-center space-x-3 group">
-              <div className="bg-white p-2.5 rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:rotate-6">
-                <Scale className="w-8 h-8 text-amber-600" />
+              <div className="bg-white p-2 rounded-xl shadow-lg group-hover:shadow-2xl transition-all duration-300 group-hover:rotate-6">
+                <Scale className="w-7 h-7 md:w-8 md:h-8 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">CogniLex AI</h2>
-                <p className="text-xs text-slate-400">Sri Lankan Law Assistant</p>
+                <h2 className="text-lg md:text-xl font-bold">CogniLex AI</h2>
+                <p className="text-[10px] md:text-xs text-slate-400">Sri Lankan Law Assistant</p>
               </div>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">
@@ -120,9 +120,9 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Practice Areas */}
-          <div>
-            <h3 className="text-lg font-bold mb-4 flex items-center">
+          {/* Practice Areas - Hidden on Mobile */}
+          <div className="hidden md:block">
+            <h3 className="text-base md:text-lg font-bold mb-2 md:mb-4 flex items-center">
               <span className="text-white">Practice Areas</span>
             </h3>
             <ul className="space-y-2">
@@ -142,13 +142,13 @@ export default function Footer() {
 
           {/* Newsletter & Legal */}
           <div>
-            <h3 className="text-lg font-bold mb-4 flex items-center">
+            <h3 className="text-base md:text-lg font-bold mb-2 md:mb-4 flex items-center">
               <span className="text-white">Stay Connected</span>
             </h3>
 
             {/* Newsletter */}
             <div className="mb-6">
-              <p className="text-gray-300 text-sm mb-3">Subscribe to our newsletter for legal updates</p>
+              <p className="hidden md:block text-gray-300 text-sm mb-3">Subscribe to our newsletter for legal updates</p>
               <div className="flex">
                 <input
                   type="email"
@@ -171,7 +171,7 @@ export default function Footer() {
                       onClick={() => {
                         const userStr = localStorage.getItem("user");
                         const user = userStr ? JSON.parse(userStr) : null;
-                        
+
                         if (link.name === 'Lawyer Registration') {
                           if (!isAuthenticated) {
                             router.push('/login');
@@ -198,7 +198,7 @@ export default function Footer() {
 
       {/* Bottom Bar */}
       <div className="border-t border-slate-800 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 md:py-4">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
 
             {/* Copyright */}

@@ -22,6 +22,7 @@ export default function FeedbackPage() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
+    const [activeTab, setActiveTab] = useState<'feedback' | 'support'>('feedback');
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -74,32 +75,57 @@ export default function FeedbackPage() {
         }
     };
 
-    const filteredFeedbacks = feedbacks.filter(f =>
-        f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.subject.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredData = feedbacks.filter(f => {
+        const matchesSearch = f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            f.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            f.subject.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const isSupport = f.subject.startsWith('[SUPPORT]');
+        
+        if (activeTab === 'support') return matchesSearch && isSupport;
+        return matchesSearch && !isSupport;
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                 <div className="flex flex-col gap-1">
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-                        Customer Feedback
+                        Communications
                     </h1>
-                    <p className="text-base text-slate-500 font-medium">Monitor and manage platform inquiries</p>
+                    <p className="text-base text-slate-500 font-medium">Monitor and manage platform inquiries & support</p>
                 </div>
 
-                <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Search feedback..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-80 shadow-sm transition-all text-slate-900"
-                    />
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search inquiries..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-11 pr-6 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64 shadow-sm transition-all text-slate-900"
+                        />
+                    </div>
                 </div>
+            </div>
+
+            {/* Tab System */}
+            <div className="flex gap-2 p-1.5 bg-slate-100 w-fit rounded-2xl border border-slate-200 mb-8">
+                <button
+                    onClick={() => { setActiveTab('feedback'); setSelectedFeedback(null); }}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'feedback' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <MessageSquare className="w-4 h-4" />
+                    Customer Feedback
+                </button>
+                <button
+                    onClick={() => { setActiveTab('support'); setSelectedFeedback(null); }}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'support' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <Mail className="w-4 h-4" />
+                    Support Desk
+                </button>
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
@@ -108,12 +134,12 @@ export default function FeedbackPage() {
                     {loading ? (
                         <div className="bg-white p-20 rounded-3xl border border-dashed border-slate-300 flex flex-col items-center justify-center">
                             <div className="w-12 h-12 border-4 border-[#FF9000] border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-slate-500 mt-4 font-bold">Synchronizing Feedback...</p>
+                            <p className="text-slate-500 mt-4 font-bold">Synchronizing Data...</p>
                         </div>
-                    ) : filteredFeedbacks.length === 0 ? (
+                    ) : filteredData.length === 0 ? (
                         <div className="bg-white p-20 rounded-3xl border border-dashed border-slate-300 text-center">
                             <MessageSquare className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                            <p className="text-slate-400 font-bold text-xl">No inquiries found matching your criteria.</p>
+                            <p className="text-slate-400 font-bold text-xl">No {activeTab === 'feedback' ? 'feedback' : 'support requests'} found.</p>
                         </div>
                     ) : (
                         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
@@ -128,7 +154,7 @@ export default function FeedbackPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
-                                        {filteredFeedbacks.map((item) => (
+                                        {filteredData.map((item) => (
                                             <tr
                                                 key={item.id}
                                                 className={`group hover:bg-slate-50/80 transition-colors cursor-pointer ${selectedFeedback?.id === item.id ? 'bg-orange-50/50' : ''}`}

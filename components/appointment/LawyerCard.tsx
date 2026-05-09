@@ -20,17 +20,17 @@ export default function LawyerCard({ lawyer, onBook }: LawyerCardProps) {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-slate-800 hover:border-[#FF9000] overflow-hidden">
-      <div className="p-5">
-        <div className="flex gap-5">
+      <div className="p-4 md:p-5">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
           
           {/* Left: Profile Image */}
-          <div className="flex-shrink-0">
-            <div className="relative w-28 h-28 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950">
+          <div className="flex-shrink-0 flex justify-center sm:block">
+            <div className="relative w-full sm:w-28 h-64 sm:h-28 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950">
               {lawyer.profilePhotoUrl ? (
                 <img
                   src={lawyer.profilePhotoUrl}
                   alt={lawyer.fullName || "Lawyer"}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-top"
                   
                   onError={(e) => {
                     e.currentTarget.onerror = null; 
@@ -74,7 +74,7 @@ export default function LawyerCard({ lawyer, onBook }: LawyerCardProps) {
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 mb-4">
               <div className="flex items-center gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-blue-600" />
                 <span className="text-gray-700 dark:text-slate-300 truncate">{lawyer.province}</span>

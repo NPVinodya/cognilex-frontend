@@ -6,6 +6,7 @@ import { Scale, ArrowLeft, UserPlus, AlertCircle, CheckCircle } from "lucide-rea
 import Link from 'next/link';
 import { account, clearActiveAppwriteSession, finalizeOtpRegistration, sendRegistrationOtp, verifyRegistrationOtp, loginWithGoogleAppwrite, loginWithMicrosoftAppwrite } from "@/lib/appwrite";
 import { API_BASE_URL } from "@/lib/constants";
+import { useGuestChatStore } from "@/store/guestChatStore";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -171,6 +172,37 @@ export default function RegisterPage() {
 
             localStorage.setItem('user', JSON.stringify(mergedUser));
             localStorage.setItem('isAuthenticated', 'true');
+
+            // ── Migrate guest chat messages to MongoDB ──────────────────
+            try {
+                const mongoUserId: string = mongoUser?._id || mongoUser?.id || '';
+                if (mongoUserId) {
+                    const { messages: guestMessages, clearGuestChat } = useGuestChatStore.getState();
+                    if (guestMessages.length > 0) {
+                        const migrateRes = await fetch('/api/chat/migrate-guest', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                user_id: mongoUserId,
+                                messages: guestMessages,
+                            }),
+                        });
+                        if (migrateRes.ok) {
+                            const migrateData = await migrateRes.json();
+                            console.log(
+                                `[Register] Migrated ${migrateData.migrated_count} guest message(s) → session: ${migrateData.session_id}`
+                            );
+                        } else {
+                            console.warn('[Register] Guest migration returned non-OK status:', migrateRes.status);
+                        }
+                        clearGuestChat();
+                    }
+                }
+            } catch (migrateErr: any) {
+                // Non-fatal: migration failure should not block registration
+                console.warn('[Register] Guest message migration failed:', migrateErr.message);
+            }
+            // ────────────────────────────────────────────────────────────
 
             try {
                 const jwt = await account.createJWT();
