@@ -689,7 +689,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
                                 hover:bg-amber-500/20 hover:text-amber-500
                                 ${openMenuId === s.id
                                   ? 'opacity-100 bg-amber-500/10 text-amber-500'
-                                  : 'opacity-0 group-hover/item:opacity-100'}`}
+                                  : 'opacity-100 md:opacity-0 group-hover/item:opacity-100 text-slate-400 dark:text-slate-500'}`}
                               title="More options"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -900,7 +900,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
                 <button
                   id="share-chat-btn"
                   onClick={handleShare}
-                  className="hidden sm:flex items-center gap-2 px-3.5 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/60 rounded-xl text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-widest transition-all group shadow-sm hover:shadow-md hover:shadow-amber-500/10 active:scale-95"
+                  className="flex items-center gap-2 px-2.5 py-2 sm:px-3.5 sm:py-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/60 rounded-xl text-amber-600 dark:text-amber-400 text-xs font-black uppercase tracking-widest transition-all group shadow-sm hover:shadow-md hover:shadow-amber-500/10 active:scale-95"
                   title="Share this chat"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:scale-110 transition-transform shrink-0">
@@ -1000,7 +1000,6 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
                 <div className="flex items-center gap-4 mt-3 px-6">
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.3em]">{msg.time}</span>
                   {msg.role === "bot" && msg.latency && typingIndex !== i && <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">⚡ {msg.latency}</span>}
-
                 </div>
               </div>
             ))}
