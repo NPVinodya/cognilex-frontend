@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { DashboardContext } from '@/app/lawyerDashboard/layout';
 import { format } from "date-fns";
+import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 
 import {
     Popover,
@@ -108,7 +110,10 @@ export default function LawyerDashboard() {
     const fetchData = async (isSilent = false) => {
         try {
             const storedUser = localStorage.getItem("user");
-            if (!storedUser) return;
+            if (!storedUser) {
+                if (!isSilent) setIsPageLoading(false);
+                return;
+            }
 
             const user = JSON.parse(storedUser);
             let currentLawyerId = user.id || user._id;
@@ -128,7 +133,10 @@ export default function LawyerDashboard() {
 
             if (user.name) setLawyerName(user.name.split(' ')[0]);
 
-            if (!currentLawyerId) return;
+            if (!currentLawyerId) {
+                if (!isSilent) setIsPageLoading(false);
+                return;
+            }
 
             const [statsRes, slotsRes] = await Promise.all([
                 fetch(`/api/lawyer/dashboard?lawyerId=${currentLawyerId}&type=stats`),
@@ -155,7 +163,7 @@ export default function LawyerDashboard() {
                 };
                 setStats(normalizedStats);
             }
-            
+
             if (slotsData.success) setAvailabilitySlots(slotsData.slots || []);
 
             if (!isSilent) {
@@ -170,7 +178,7 @@ export default function LawyerDashboard() {
 
     useEffect(() => {
         fetchData();
-        
+
         // Auto-refresh every 30 seconds
         const interval = setInterval(() => {
             fetchData(true);
@@ -180,7 +188,7 @@ export default function LawyerDashboard() {
     }, []);
 
     const handleSaveSlot = async () => {
-        if (!newSlot.date || !newSlot.time) return alert("Please pick a Date and Time.");
+        if (!newSlot.date || !newSlot.time) return toast.error("Please pick a Date and Time.");
 
         setIsSaving(true);
         try {
@@ -207,37 +215,54 @@ export default function LawyerDashboard() {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                // Keep inline add open for next entry
+                toast.success("Availability slot created successfully!");
                 fetchData();
                 setIsAddSlotOpen(false);
                 setNewSlot({ date: newSlot.date, time: '', type: 'Consultation', location: newSlot.location });
             } else {
-                alert(`Error: ${data.message || "Failed to create slot"}`);
+                toast.error(`Error: ${data.message || "Failed to create slot"}`);
             }
         } catch (error: any) {
             console.error("Save Error:", error);
-            alert(`Error: ${error.message || "Connection failed"}`);
+            toast.error(`Error: ${error.message || "Connection failed"}`);
         } finally {
             setIsSaving(false);
         }
     };
 
     const handleDeleteSlot = async (id: string) => {
-        if (!window.confirm("Are you sure you want to remove this availability slot?")) return;
-        try {
-            const res = await fetch(`/api/lawyer/dashboard?slotId=${id}`, {
-                method: 'DELETE'
-            });
-            const data = await res.json();
-            if (data.success) {
-                setAvailabilitySlots(availabilitySlots.filter(slot => slot.id !== id));
-                if (isDetailModalOpen) setIsDetailModalOpen(false);
-            } else {
-                alert(data.message || "Failed to remove slot");
+        Swal.fire({
+            title: 'Remove Slot?',
+            text: "Are you sure you want to remove this availability slot?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#FF9000',
+            cancelButtonColor: '#f43f5e',
+            confirmButtonText: 'Yes, remove it',
+            customClass: {
+                popup: 'rounded-3xl',
+                confirmButton: 'rounded-xl',
+                cancelButton: 'rounded-xl'
             }
-        } catch (error) {
-            alert("Error removing slot");
-        }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/lawyer/dashboard?slotId=${id}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        setAvailabilitySlots(availabilitySlots.filter(slot => slot.id !== id));
+                        if (isDetailModalOpen) setIsDetailModalOpen(false);
+                        toast.success("Slot removed successfully");
+                    } else {
+                        toast.error(data.message || "Failed to remove slot");
+                    }
+                } catch (error) {
+                    toast.error("Error removing slot");
+                }
+            }
+        });
     };
 
     const handleUpdateStatus = async (id: string, newStatus: string) => {
@@ -251,16 +276,17 @@ export default function LawyerDashboard() {
             const data = await res.json();
             if (data.success) {
                 // Update local state
-                setAvailabilitySlots(prev => prev.map(apt => 
+                setAvailabilitySlots(prev => prev.map(apt =>
                     apt.id === id ? { ...apt, status: newStatus } : apt
                 ));
                 if (selectedApt && selectedApt.id === id) {
                     setSelectedApt({ ...selectedApt, status: newStatus });
                 }
+                toast.success(`Appointment ${newStatus.toLowerCase()} successfully`);
                 fetchData(true); // Silent refresh to keep stats in sync
             }
         } catch (error) {
-            alert("Failed to update status.");
+            toast.error("Failed to update status.");
         }
     };
 
@@ -277,72 +303,72 @@ export default function LawyerDashboard() {
 
     return (
         <>
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 md:mb-8 gap-4">
                 <div>
-                    <h1 className="text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Welcome back, {lawyerName}</h1>
-                    <p className="text-slate-500 font-medium mt-1 text-sm">Here is what's happening with your practice today.</p>
+                    <h1 className="text-2xl md:text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Welcome back, {lawyerName}</h1>
+                    <p className="text-slate-500 font-medium mt-1 text-xs md:text-sm">Here is what's happening with your practice today.</p>
                 </div>
-                <div className="inline-flex items-center gap-2 bg-white px-5 py-2.5 rounded-full border border-slate-200 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] text-sm font-bold text-slate-700 w-fit">
-                    <Clock className="w-4 h-4 text-[#FF9000]" />
+                <div className="inline-flex items-center gap-2 bg-white px-4 md:px-5 py-2 md:py-2.5 rounded-full border border-slate-200 shadow-sm text-xs md:text-sm font-bold text-slate-700 w-fit">
+                    <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#FF9000]" />
                     {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
             </div>
 
             {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                 {/* Total Bookings Card */}
-                <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-orange-50 text-[#FF9000] rounded-xl">
-                            <CalendarIcon className="w-6 h-6" />
+                <div className="bg-white p-5 md:p-6 md:py-7 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                    <div className="flex justify-between items-start mb-4 md:mb-6">
+                        <div className="p-2.5 md:p-3 bg-orange-50 text-[#FF9000] rounded-xl">
+                            <CalendarIcon className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold">All Time</Badge>
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold text-[10px]">All Time</Badge>
                     </div>
                     <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Total Bookings</p>
-                        <h3 className="text-[32px] font-black text-[#181B25] leading-none">{stats?.totalBookings || 0}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Bookings</p>
+                        <h3 className="text-2xl md:text-[32px] font-black text-[#181B25] leading-none">{stats?.totalBookings || 0}</h3>
                     </div>
                 </div>
 
                 {/* Today's Bookings Card */}
-                <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-emerald-50 text-emerald-500 rounded-xl">
-                            <Users className="w-6 h-6" />
+                <div className="bg-white p-5 md:p-6 md:py-7 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                    <div className="flex justify-between items-start mb-4 md:mb-6">
+                        <div className="p-2.5 md:p-3 bg-emerald-50 text-emerald-500 rounded-xl">
+                            <Users className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold">Real-time</Badge>
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-none font-bold text-[10px]">Real-time</Badge>
                     </div>
                     <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Bookings</p>
-                        <h3 className="text-[26px] font-black text-[#181B25] leading-none">{stats?.todayBookings || 0}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Today's Bookings</p>
+                        <h3 className="text-2xl md:text-[26px] font-black text-[#181B25] leading-none">{stats?.todayBookings || 0}</h3>
                     </div>
                 </div>
 
                 {/* Today's Total Slots Card */}
-                <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-slate-50 text-slate-500 rounded-xl">
-                            <Clock className="w-6 h-6" />
+                <div className="bg-white p-5 md:p-6 md:py-7 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                    <div className="flex justify-between items-start mb-4 md:mb-6">
+                        <div className="p-2.5 md:p-3 bg-slate-50 text-slate-500 rounded-xl">
+                            <Clock className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <Badge variant="secondary" className="bg-slate-50 text-slate-600 hover:bg-slate-50 border-none font-bold">Capacity</Badge>
+                        <Badge variant="secondary" className="bg-slate-50 text-slate-600 hover:bg-slate-50 border-none font-bold text-[10px]">Capacity</Badge>
                     </div>
                     <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Today's Slots</p>
-                        <h3 className="text-[26px] font-black text-[#181B25] leading-none">{stats?.todaySlots || 0}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Today's Slots</p>
+                        <h3 className="text-2xl md:text-[26px] font-black text-[#181B25] leading-none">{stats?.todaySlots || 0}</h3>
                     </div>
                 </div>
 
                 {/* Active Clients Card */}
-                <div className="bg-white p-6 py-7 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] flex flex-col justify-between hover:shadow-lg transition">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="p-3 bg-orange-50 text-[#FF9000] rounded-xl">
-                            <Star className="w-6 h-6" />
+                <div className="bg-white p-5 md:p-6 md:py-7 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                    <div className="flex justify-between items-start mb-4 md:mb-6">
+                        <div className="p-2.5 md:p-3 bg-orange-50 text-[#FF9000] rounded-xl">
+                            <Star className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <Badge variant="secondary" className="bg-orange-50 text-orange-600 hover:bg-orange-50 border-none font-bold">Active</Badge>
+                        <Badge variant="secondary" className="bg-orange-50 text-orange-600 hover:bg-orange-50 border-none font-bold text-[10px]">Active</Badge>
                     </div>
                     <div>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Active Clients</p>
-                        <h3 className="text-[26px] font-black text-[#181B25] tracking-tighter leading-none">{stats?.activeClients || 0}</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Clients</p>
+                        <h3 className="text-2xl md:text-[26px] font-black text-[#181B25] tracking-tighter leading-none">{stats?.activeClients || 0}</h3>
                     </div>
                 </div>
             </div>
@@ -354,32 +380,32 @@ export default function LawyerDashboard() {
 
                     <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col">
                         {/* Header */}
-                        <div className="p-6 md:px-8 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="p-5 md:p-6 md:px-8 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-[17px] font-bold text-[#181B25] flex items-center gap-2">
-                                    <CalendarIcon className="w-5 h-5 text-[#FF9000]" />
-                                    Schedule & Appointments
-                                </h2>
-                                <p className="text-slate-500 text-sm mt-1">Manage your calendar capacity for the week.</p>
+                                <h2 className="text-[16px] md:text-[17px] font-bold text-[#181B25] flex items-center gap-2">
+                                     <CalendarIcon className="w-5 h-5 text-[#FF9000]" />
+                                     Schedule & Appointments
+                                 </h2>
+                                <p className="text-slate-500 text-[12px] md:text-sm mt-1">Manage your calendar capacity for the week.</p>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 md:gap-3">
                                 <div className="flex bg-slate-100 p-1 rounded-full border border-slate-200">
                                     <button
                                         onClick={() => setViewMode('daily')}
-                                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'daily' ? 'bg-white text-[#FF9000] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        className={`px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all ${viewMode === 'daily' ? 'bg-white text-[#FF9000] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
                                         Daily
                                     </button>
                                     <button
                                         onClick={() => setViewMode('all')}
-                                        className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${viewMode === 'all' ? 'bg-white text-[#FF9000] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        className={`px-3 md:px-4 py-1.5 rounded-full text-[10px] md:text-xs font-bold transition-all ${viewMode === 'all' ? 'bg-white text-[#FF9000] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                                     >
                                         All
                                     </button>
                                 </div>
                                 <Button
                                     onClick={() => setIsAddSlotOpen(true)}
-                                    className="bg-[#FF9000] hover:bg-[#E68200] rounded-full shadow-md shadow-orange-600/20 text-sm h-10 px-6 gap-2 text-white font-semibold"
+                                    className="bg-[#FF9000] hover:bg-[#E68200] rounded-full shadow-md shadow-orange-600/20 text-xs md:text-sm h-9 md:h-10 px-4 md:px-6 gap-2 text-white font-semibold flex-1 sm:flex-initial"
                                 >
                                     <Plus className="h-4 w-4" /> Add Slot
                                 </Button>
@@ -387,31 +413,31 @@ export default function LawyerDashboard() {
                         </div>
 
                         {/* Week Days Picker */}
-                        <div className="px-6 md:px-8 py-5 border-b border-slate-100 flex items-center justify-between gap-2">
+                        <div className="px-4 md:px-8 py-5 border-b border-slate-100 flex items-center justify-between gap-2 overflow-hidden">
                             <button
                                 onClick={() => shiftWeek(-1)}
-                                className="p-1.5 text-slate-400 hover:text-slate-700 transition"
+                                className="p-1.5 text-slate-400 hover:text-slate-700 transition shrink-0"
                             >
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
-                            <div className="flex gap-2 sm:gap-4 overflow-x-auto w-full justify-between pb-1 no-scrollbar">
+                            <div className="flex gap-2 sm:gap-4 overflow-x-auto w-full justify-start md:justify-between pb-1 no-scrollbar min-w-0">
                                 {weekDays.map((d, i) => {
                                     const isActive = d.full === selectedDate;
                                     return (
                                         <button
                                             key={i}
                                             onClick={() => setSelectedDate(d.full)}
-                                            className={`flex flex-col items-center justify-center min-w-[56px] h-[64px] rounded-2xl border transition hover:-translate-y-0.5 ${isActive ? 'bg-[#FF9000] border-[#FF9000] text-white shadow-lg shadow-[#FF9000]/30' : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300'} ${d.isToday && !isActive ? 'ring-2 ring-orange-100' : ''}`}
+                                            className={`flex flex-col items-center justify-center min-w-[50px] md:min-w-[56px] h-[58px] md:h-[64px] rounded-xl md:rounded-2xl border transition hover:-translate-y-0.5 shrink-0 ${isActive ? 'bg-[#FF9000] border-[#FF9000] text-white shadow-lg shadow-[#FF9000]/30' : 'bg-white border-slate-200 text-slate-600 hover:border-orange-300'} ${d.isToday && !isActive ? 'ring-2 ring-orange-100' : ''}`}
                                         >
-                                            <span className={`text-[10px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-orange-100' : 'text-slate-400'}`}>{d.dayName}</span>
-                                            <span className="text-xl font-bold">{d.dateNum}</span>
+                                            <span className={`text-[8px] md:text-[10px] font-bold uppercase tracking-widest mb-0.5 ${isActive ? 'text-orange-100' : 'text-slate-400'}`}>{d.dayName}</span>
+                                            <span className="text-base md:text-xl font-bold">{d.dateNum}</span>
                                         </button>
                                     );
                                 })}
                             </div>
                             <button
                                 onClick={() => shiftWeek(1)}
-                                className="p-1.5 text-slate-400 hover:text-slate-700 transition"
+                                className="p-1.5 text-slate-400 hover:text-slate-700 transition shrink-0"
                             >
                                 <ChevronRight className="w-5 h-5" />
                             </button>
@@ -437,43 +463,43 @@ export default function LawyerDashboard() {
                                         : 'bg-slate-50/50 border-2 border-dashed border-slate-200 hover:border-emerald-300';
 
                                     return (
-                                        <div key={slot.id} className="relative pl-10 group">
+                                        <div key={slot.id} className="relative pl-7 md:pl-10 group">
                                             {/* Dot */}
                                             <div className={`absolute -left-[6px] top-6 w-3 h-3 rounded-full ${dotColor} ring-4 ring-white`}></div>
 
-                                            <div className={`p-5 rounded-2xl transition-all ${boxStyle}`}>
-                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                                            <div className={`p-4 md:p-5 rounded-2xl transition-all ${boxStyle}`}>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 md:gap-5">
                                                     <div>
                                                         <div className="flex items-center gap-3 mb-2">
-                                                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest ${tagColors}`}>
+                                                            <span className={`text-[9px] md:text-[10px] font-bold px-2 py-0.5 md:py-1 rounded-full uppercase tracking-widest ${tagColors}`}>
                                                                 {slot.type}
                                                             </span>
-                                                            <span className="text-[13px] font-bold text-[#181B25] flex items-center gap-1.5">
+                                                            <span className="text-[11px] md:text-[13px] font-bold text-[#181B25] flex items-center gap-1.5">
                                                                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                                                                 {viewMode === 'all' && <span className="text-orange-500">{slot.date} | </span>}
                                                                 {slot.time}
                                                             </span>
                                                         </div>
 
-                                                        <h4 className="text-lg font-bold text-[#181B25] tracking-tight">
+                                                        <h4 className="text-base md:text-lg font-bold text-[#181B25] tracking-tight">
                                                             {slot.isBooked ? slot.clientName : 'Open Available Slot'}
                                                         </h4>
-                                                        <div className="flex items-center gap-1.5 mt-1.5 text-[13px] text-slate-500 font-medium">
+                                                        <div className="flex items-center gap-1.5 mt-1.5 text-[12px] md:text-[13px] text-slate-500 font-medium">
                                                             <MapPin className="h-3.5 w-3.5" />
                                                             {slot.location}
                                                         </div>
                                                     </div>
 
-                                                    <div className="shrink-0">
+                                                    <div className="shrink-0 w-full sm:w-auto">
                                                         {slot.isBooked ? (
-                                                            <button 
+                                                            <button
                                                                 onClick={() => { setSelectedApt(slot); setIsDetailModalOpen(true); }}
-                                                                className="px-5 py-2.5 bg-[#181B25] hover:bg-[#0e1017] text-white text-sm font-bold rounded-full transition w-full sm:w-auto shadow-sm"
+                                                                className="px-5 py-2.5 bg-[#181B25] hover:bg-[#0e1017] text-white text-sm font-bold rounded-xl transition w-full sm:w-auto shadow-sm"
                                                             >
                                                                 View Details
                                                             </button>
                                                         ) : (
-                                                            <button onClick={() => handleDeleteSlot(slot.id)} className="px-5 py-2.5 bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-sm font-bold rounded-full transition w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm">
+                                                            <button onClick={() => handleDeleteSlot(slot.id)} className="px-5 py-2.5 bg-white text-rose-500 border border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-sm font-bold rounded-xl transition w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm">
                                                                 <Trash2 className="w-4 h-4" /> Remove
                                                             </button>
                                                         )}
@@ -491,7 +517,7 @@ export default function LawyerDashboard() {
                                 {/* Always show add option at the bottom */}
                                 <div className="pt-6 border-t border-slate-100 mt-6">
                                     {!showInlineAdd ? (
-                                        <button 
+                                        <button
                                             onClick={() => setShowInlineAdd(true)}
                                             className="group flex items-center gap-4 p-4 w-full rounded-2xl border-2 border-dashed border-slate-100 hover:border-orange-200 hover:bg-orange-50/30 transition-all duration-300"
                                         >
@@ -508,16 +534,16 @@ export default function LawyerDashboard() {
                                             <div className="flex flex-col sm:flex-row items-end gap-4">
                                                 <div className="flex-1 w-full space-y-2">
                                                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Select Date</label>
-                                                    <input 
-                                                        type="date" 
+                                                    <input
+                                                        type="date"
                                                         value={newSlot.date}
-                                                        onChange={(e) => setNewSlot({...newSlot, date: e.target.value})}
-                                                        className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium" 
+                                                        onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
+                                                        className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium"
                                                     />
                                                 </div>
                                                 <div className="flex-1 w-full space-y-2">
                                                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Select Time</label>
-                                                    <Select onValueChange={(val) => setNewSlot({...newSlot, time: val})} value={newSlot.time}>
+                                                    <Select onValueChange={(val) => setNewSlot({ ...newSlot, time: val })} value={newSlot.time}>
                                                         <SelectTrigger className="h-11 bg-white border-slate-200 rounded-xl font-medium">
                                                             <SelectValue placeholder="Time" />
                                                         </SelectTrigger>
@@ -530,16 +556,16 @@ export default function LawyerDashboard() {
                                                 </div>
                                                 <div className="flex-1 w-full space-y-2">
                                                     <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">Location</label>
-                                                    <input 
-                                                        type="text" 
+                                                    <input
+                                                        type="text"
                                                         placeholder="Location"
                                                         value={newSlot.location}
-                                                        onChange={(e) => setNewSlot({...newSlot, location: e.target.value})}
-                                                        className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium" 
+                                                        onChange={(e) => setNewSlot({ ...newSlot, location: e.target.value })}
+                                                        className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-[#FF9000] outline-none transition font-medium"
                                                     />
                                                 </div>
                                                 <div className="shrink-0 w-full sm:w-auto">
-                                                    <Button 
+                                                    <Button
                                                         disabled={isSaving}
                                                         onClick={handleSaveSlot}
                                                         className="h-11 px-8 bg-[#FF9000] hover:bg-[#E68200] text-white font-bold rounded-xl w-full flex items-center gap-2 shadow-lg shadow-orange-500/20"
@@ -548,7 +574,7 @@ export default function LawyerDashboard() {
                                                         Add
                                                     </Button>
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={() => setShowInlineAdd(false)}
                                                     className="h-11 w-11 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl transition"
                                                 >
@@ -567,103 +593,64 @@ export default function LawyerDashboard() {
                 <div className="lg:col-span-4 flex flex-col gap-6">
 
                     {/* Quick Actions Card - Premium White Style */}
-                    <div className="bg-white rounded-[2rem] p-7 text-slate-900 overflow-hidden relative shadow-2xl border border-slate-100 group/card">
+                    <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-7 text-slate-900 overflow-hidden relative shadow-xl border border-slate-100 group/card">
                         {/* Soft atmospheric glows for light mode */}
                         <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-orange-200/40 to-transparent blur-[80px] group-hover/card:scale-125 transition-transform duration-700"></div>
                         <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-blue-100/30 to-transparent blur-[80px]"></div>
 
-                        <h3 className="text-[17px] font-bold mb-6 flex items-center gap-2.5 relative z-10">
+                        <h3 className="text-[16px] md:text-[17px] font-bold mb-5 md:mb-6 flex items-center gap-2.5 relative z-10">
                             <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center border border-orange-200">
                                 <Settings className="w-4 h-4 text-[#FF9000]" />
                             </div>
                             Quick Actions
                         </h3>
 
-                        <div className="space-y-3.5 relative z-10">
+                        <div className="space-y-3 relative z-10">
                             <button
                                 onClick={() => setIsAddSlotOpen(true)}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
+                                className="w-full flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
                             >
-                                <div className="bg-orange-100 text-[#FF9000] p-2.5 rounded-xl border border-orange-200 group-hover/btn:scale-110 group-hover/btn:bg-orange-200 transition duration-300">
+                                <div className="bg-orange-100 text-[#FF9000] p-2 md:p-2.5 rounded-lg md:rounded-xl border border-orange-200 group-hover/btn:scale-110 group-hover/btn:bg-orange-200 transition duration-300 shrink-0">
                                     <Plus className="w-4 h-4" />
                                 </div>
-                                <div className="text-left">
-                                    <span className="font-bold text-[14px] text-slate-900 block">Add New Slot</span>
-                                    <span className="text-[10px] text-slate-400 font-medium tracking-tight">Create client availability</span>
+                                <div className="text-left min-w-0">
+                                    <span className="font-bold text-[13px] md:text-[14px] text-slate-900 block truncate">Add New Slot</span>
+                                    <span className="text-[9px] md:text-[10px] text-slate-400 font-medium tracking-tight truncate block">Create client availability</span>
                                 </div>
-                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-orange-500 transition-colors" />
+                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-orange-500 transition-colors shrink-0" />
                             </button>
 
                             <button
                                 onClick={() => router.push('/lawyerDashboard/settings')}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
+                                className="w-full flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
                             >
-                                <div className="bg-purple-100 text-[#984FFF] p-2.5 rounded-xl border border-purple-200 group-hover/btn:scale-110 group-hover/btn:bg-purple-200 transition duration-300">
+                                <div className="bg-purple-100 text-[#984FFF] p-2 md:p-2.5 rounded-lg md:rounded-xl border border-purple-200 group-hover/btn:scale-110 group-hover/btn:bg-purple-200 transition duration-300 shrink-0">
                                     <Edit className="w-4 h-4" />
                                 </div>
-                                <div className="text-left">
-                                    <span className="font-bold text-[14px] text-slate-900 block">Update Profile</span>
-                                    <span className="text-[10px] text-slate-400 font-medium tracking-tight">Modify public details</span>
+                                <div className="text-left min-w-0">
+                                    <span className="font-bold text-[13px] md:text-[14px] text-slate-900 block truncate">Update Profile</span>
+                                    <span className="text-[9px] md:text-[10px] text-slate-400 font-medium tracking-tight truncate block">Modify public details</span>
                                 </div>
-                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-purple-500 transition-colors" />
+                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-purple-500 transition-colors shrink-0" />
                             </button>
 
                             <button
                                 onClick={() => router.push('/lawyerDashboard/analytics')}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
+                                className="w-full flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/60 transition-all duration-300 group/btn"
                             >
-                                <div className="bg-emerald-100 text-[#10B981] p-2.5 rounded-xl border border-emerald-200 group-hover/btn:scale-110 group-hover/btn:bg-emerald-200 transition duration-300">
+                                <div className="bg-emerald-100 text-[#10B981] p-2 md:p-2.5 rounded-lg md:rounded-xl border border-emerald-200 group-hover/btn:scale-110 group-hover/btn:bg-emerald-200 transition duration-300 shrink-0">
                                     <TrendingUp className="w-4 h-4" />
                                 </div>
-                                <div className="text-left">
-                                    <span className="font-bold text-[14px] text-slate-900 block">View Analytics</span>
-                                    <span className="text-[10px] text-slate-400 font-medium tracking-tight">Track performance metrics</span>
+                                <div className="text-left min-w-0">
+                                    <span className="font-bold text-[13px] md:text-[14px] text-slate-900 block truncate">View Analytics</span>
+                                    <span className="text-[9px] md:text-[10px] text-slate-400 font-medium tracking-tight truncate block">Track performance metrics</span>
                                 </div>
-                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-emerald-500 transition-colors" />
+                                <ChevronRight className="w-4 h-4 ml-auto text-slate-300 group-hover/btn:text-emerald-500 transition-colors shrink-0" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Action Required Card */}
-                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)]">
-                        <h3 className="font-bold text-[#181B25] mb-4 flex items-center gap-2 text-base">
-                            <Star className="w-5 h-5 text-[#FF9000]" /> {stats?.pendingRequests > 0 ? "Action Required" : "System Status"}
-                        </h3>
-                        {stats?.pendingRequests > 0 ? (
-                            <div className="bg-rose-50 border border-rose-100 rounded-xl p-5">
-                                <div className="flex items-start gap-4">
-                                    <span className="relative flex h-2.5 w-2.5 mt-1.5 shrink-0">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-                                    </span>
-                                    <div>
-                                        <p className="font-bold text-[#181B25] text-sm">Review Pending Bookings</p>
-                                        <p className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">
-                                            You have {stats.pendingRequests} new consultation requests that need your review and confirmation.
-                                        </p>
-                                        <button 
-                                            onClick={() => router.push('/lawyerDashboard/appointments')}
-                                            className="mt-4 text-[13px] font-bold text-rose-600 hover:text-rose-700 transition"
-                                        >
-                                            Review Appointments
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
-                                <div className="flex items-start gap-4">
-                                     <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                                    <div>
-                                        <p className="font-bold text-[#181B25] text-sm">Everything is clear</p>
-                                        <p className="text-[13px] text-slate-500 mt-1.5 leading-relaxed">
-                                            No pending actions at the moment. Your practice is up-to-date.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+
 
                 </div>
             </div>

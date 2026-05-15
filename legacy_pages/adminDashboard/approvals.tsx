@@ -98,8 +98,8 @@ export default function AdminApprovals() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3 w-full xl:w-auto mt-6 xl:mt-0 pt-8 xl:pt-0 border-t xl:border-t-0 border-slate-100 items-center justify-end">
-                <button 
-                  onClick={() => setSelectedLawyer(lawyer)} 
+                <button
+                  onClick={() => setSelectedLawyer(lawyer)}
                   className="px-6 py-4 bg-slate-100 text-slate-700 rounded-[1.5rem] hover:bg-slate-200 transition-all duration-300 font-black flex items-center justify-center gap-2 shadow-sm active:scale-95 group/btn-view"
                 >
                   <Eye className="w-5 h-5 text-slate-500 group-hover/btn-view:text-blue-500 transition-colors" />
@@ -123,11 +123,11 @@ export default function AdminApprovals() {
       {selectedLawyer && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 text-left">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setSelectedLawyer(null)}
           ></div>
-          
+
           {/* Modal Content */}
           <div className="relative w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-300 border border-slate-200">
             {/* Header */}
@@ -141,7 +141,7 @@ export default function AdminApprovals() {
                   <p className="text-sm font-bold text-slate-500">Review all details and documents before approval</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedLawyer(null)}
                 className="p-3 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-full transition-colors"
               >
@@ -152,7 +152,7 @@ export default function AdminApprovals() {
             {/* Scrollable Body */}
             <div className="p-8 overflow-y-auto flex-1 bg-slate-50/50">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
+
                 {/* Left Column: Info */}
                 <div className="space-y-8">
                   {/* Personal Info */}
@@ -162,10 +162,10 @@ export default function AdminApprovals() {
                     </h3>
                     <div className="space-y-4">
                       <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Full Name</p><p className="font-bold text-slate-900">{selectedLawyer.fullName}</p></div>
-                        <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Email</p><p className="font-bold text-slate-900 flex items-center gap-2 break-all"><Mail className="w-4 h-4 text-slate-400 shrink-0"/> {selectedLawyer.email}</p></div>
-                        <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Phone</p><p className="font-bold text-slate-900 flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400 shrink-0"/> {selectedLawyer.phone}</p></div>
-                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Address</p><p className="font-bold text-slate-900 flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400"/> {selectedLawyer.address}, {selectedLawyer.city}, {selectedLawyer.province}</p></div>
-                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">NIC Number</p><p className="font-bold text-slate-900 flex items-center gap-2"><CreditCard className="w-4 h-4 text-slate-400"/> {selectedLawyer.nicNumber}</p></div>
+                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Email</p><p className="font-bold text-slate-900 flex items-center gap-2 break-all"><Mail className="w-4 h-4 text-slate-400 shrink-0" /> {selectedLawyer.email}</p></div>
+                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Phone</p><p className="font-bold text-slate-900 flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400 shrink-0" /> {selectedLawyer.phone}</p></div>
+                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Address</p><p className="font-bold text-slate-900 flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400" /> {selectedLawyer.address}, {selectedLawyer.city}, {selectedLawyer.province}</p></div>
+                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">NIC Number</p><p className="font-bold text-slate-900 flex items-center gap-2"><CreditCard className="w-4 h-4 text-slate-400" /> {selectedLawyer.nicNumber}</p></div>
                     </div>
                   </div>
 
@@ -184,10 +184,10 @@ export default function AdminApprovals() {
                         <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Experience</p><p className="font-bold text-slate-900">{selectedLawyer.yearsOfExperience} Years</p></div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Law Firm</p><p className="font-bold text-slate-900 flex items-center gap-2"><Building2 className="w-4 h-4 text-slate-400"/> {selectedLawyer.lawFirm}</p></div>
-                        <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Fee (LKR)</p><p className="font-bold text-slate-900 flex items-center gap-2"><Banknote className="w-4 h-4 text-slate-400"/> Rs. {selectedLawyer.consultationFee}</p></div>
+                        <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Law Firm</p><p className="font-bold text-slate-900 flex items-center gap-2"><Building2 className="w-4 h-4 text-slate-400" /> {selectedLawyer.lawFirm}</p></div>
+                        <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Fee (LKR)</p><p className="font-bold text-slate-900 flex items-center gap-2"><Banknote className="w-4 h-4 text-slate-400" /> Rs. {selectedLawyer.consultationFee}</p></div>
                       </div>
-                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Languages Spoken</p><p className="font-bold text-slate-900 flex items-center gap-2"><Languages className="w-4 h-4 text-slate-400"/> {selectedLawyer.languagesSpoken}</p></div>
+                      <div><p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Languages Spoken</p><p className="font-bold text-slate-900 flex items-center gap-2"><Languages className="w-4 h-4 text-slate-400" /> {selectedLawyer.languagesSpoken}</p></div>
                       <div>
                         <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Practice Areas</p>
                         <div className="flex flex-wrap gap-2 mt-2">
@@ -219,7 +219,7 @@ export default function AdminApprovals() {
                   <h3 className="text-lg font-black text-slate-800 mb-2 flex items-center gap-2">
                     <FileText className="w-5 h-5 text-rose-500" /> Verification Documents
                   </h3>
-                  
+
                   {/* Profile Photo */}
                   <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm">
                     <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-3">Profile Photo</p>
@@ -274,19 +274,19 @@ export default function AdminApprovals() {
 
             {/* Footer Actions */}
             <div className="px-8 py-5 border-t border-slate-100 bg-white flex items-center justify-end gap-4 shrink-0">
-              <button 
+              <button
                 onClick={() => setSelectedLawyer(null)}
                 className="px-6 py-3 font-bold text-slate-500 hover:text-slate-800 transition-colors"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={() => handleApproval(selectedLawyer._id, 'reject')}
                 className="px-8 py-3 bg-white border-2 border-slate-200 text-slate-600 rounded-xl hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 transition-all font-black flex items-center gap-2"
               >
                 <UserX className="w-4 h-4" /> Reject Request
               </button>
-              <button 
+              <button
                 onClick={() => handleApproval(selectedLawyer._id, 'approve')}
                 className="px-8 py-3 bg-slate-900 text-white rounded-xl hover:bg-emerald-600 transition-all font-black flex items-center gap-2 shadow-lg shadow-slate-900/10"
               >

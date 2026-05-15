@@ -318,9 +318,6 @@ export default function AdminFinancePage() {
                             )}
                         </div>
 
-                        <button className="w-full mt-10 py-5 bg-slate-900 text-white hover:bg-black rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all duration-500 flex items-center justify-center gap-3 shadow-xl active:scale-95">
-                            Comprehensive Audit Log <ArrowRight className="w-4 h-4" />
-                        </button>
                     </div>
                 </div>
             </div>
