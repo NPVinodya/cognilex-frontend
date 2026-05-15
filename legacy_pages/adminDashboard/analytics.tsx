@@ -37,7 +37,7 @@ export default function AdminAnalyticsPage() {
         try {
             setLoading(true);
             const response = await fetch(`${API_URL}/admin/analytics?period=${period}`);
-            
+
             if (response.ok) {
                 const data = await response.json();
                 setStats(data.summary || {
@@ -328,12 +328,12 @@ export default function AdminAnalyticsPage() {
                                                 <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                                             ))}
                                         </Pie>
-                                        <Tooltip 
+                                        <Tooltip
                                             contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
                                         />
-                                        <Legend 
-                                            verticalAlign="bottom" 
-                                            align="center" 
+                                        <Legend
+                                            verticalAlign="bottom"
+                                            align="center"
                                             iconType="circle"
                                             wrapperStyle={{ fontSize: '10px', fontWeight: 'black', textTransform: 'uppercase', letterSpacing: '0.05em', paddingTop: '20px' }}
                                         />
@@ -368,12 +368,12 @@ export default function AdminAnalyticsPage() {
                                                 <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                                             ))}
                                         </Pie>
-                                        <Tooltip 
+                                        <Tooltip
                                             contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
                                         />
-                                        <Legend 
-                                            verticalAlign="bottom" 
-                                            align="center" 
+                                        <Legend
+                                            verticalAlign="bottom"
+                                            align="center"
                                             iconType="circle"
                                             wrapperStyle={{ fontSize: '10px', fontWeight: 'black', textTransform: 'uppercase', letterSpacing: '0.05em', paddingTop: '20px' }}
                                         />

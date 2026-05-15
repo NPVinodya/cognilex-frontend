@@ -10,6 +10,9 @@ import {
 import { Button } from '@/components/ui/button';
 import DashboardLoading from '@/components/lawyerDashboard/DashboardLoading';
 import { API_BASE_URL } from '@/lib/constants';
+import { Toaster, toast } from 'sonner';
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
 const SIDEBAR_NAV = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/lawyerDashboard/dashboard', badge: null },
@@ -17,9 +20,11 @@ const SIDEBAR_NAV = [
   { name: 'Bookings', icon: Briefcase, path: '/lawyerDashboard/bookings', badge: null },
   { name: 'Clients', icon: Users, path: '/lawyerDashboard/clients', badge: null },
   { name: 'Documents', icon: FileText, path: '/lawyerDashboard/documents', badge: null },
+  { name: 'Cases', icon: FileText, path: '/lawyerDashboard/cases', badge: null },
   { name: 'Messages', icon: MessageSquare, path: '/lawyerDashboard/messages', badge: null },
   { name: 'Analytics', icon: TrendingUp, path: '/lawyerDashboard/analytics', badge: null },
   { name: 'Settings', icon: Settings, path: '/lawyerDashboard/settings', badge: null },
+
 ];
 
 interface DashboardContextType {
@@ -47,13 +52,16 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = async (isSilent = false) => {
     try {
       const userJson = localStorage.getItem('user');
       if (!userJson) return;
       const user = JSON.parse(userJson);
       const lawyerId = user.id || user._id;
-      if (!lawyerId) return;
+      if (!lawyerId) {
+        if (!isSilent) setIsPageLoading(false);
+        return;
+      }
 
       // Use API_BASE_URL from constants for reliability
       const res = await fetch(`${API_BASE_URL}/lawyer-dashboard/${lawyerId}/stats`);
@@ -91,10 +99,16 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
   }, [pathname]);
 
   React.useEffect(() => {
-    const resolveChatHref = () => {
+    const resolveChatHref = (isSilent = false) => {
       try {
-        const rawUser = localStorage.getItem('user');
-        if (!rawUser || rawUser === 'undefined' || rawUser === 'null') {
+        const storedUser = localStorage.getItem("user");
+        if (!storedUser) {
+          if (!isSilent) setIsPageLoading(false);
+          return;
+        }
+
+        const rawUser = storedUser;
+        if (rawUser === 'undefined' || rawUser === 'null') {
           setChatHref('/login');
           return;
         }
@@ -146,6 +160,7 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="flex h-screen bg-[#F8F9FA] font-sans overflow-hidden">
+      <Toaster position="top-right" richColors closeButton />
 
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
@@ -181,9 +196,9 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
                   key={item.name}
                   href={item.path}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all ${isActive
-                    ? 'bg-[#FF9000] text-white shadow-md shadow-orange-900/20'
-                    : 'hover:bg-white/5 hover:text-white text-slate-400'
+                  className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all ${(pathname === item.path || (item.name === 'Dashboard' && pathname === '/lawyerDashboard'))
+                      ? 'bg-[#FF9000] text-white shadow-md shadow-orange-900/20'
+                      : 'hover:bg-white/5 hover:text-white text-slate-400'
                     }`}
                 >
                   <div className="flex items-center gap-3">
@@ -215,11 +230,26 @@ export default function LawyerDashboardLayout({ children }: { children: React.Re
           {/* Logout Button */}
           <button
             onClick={() => {
-              if (confirm('Are you sure you want to log out?')) {
-                localStorage.clear();
-                sessionStorage.clear();
-                window.location.href = '/login'; // Lawyer login is usually at /login
-              }
+              Swal.fire({
+                title: 'Are you sure?',
+                text: "You will be logged out of your session.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#FF9000',
+                cancelButtonColor: '#f43f5e',
+                confirmButtonText: 'Yes, logout',
+                customClass: {
+                  popup: 'rounded-3xl',
+                  confirmButton: 'rounded-xl',
+                  cancelButton: 'rounded-xl'
+                }
+              }).then(async (result) => {
+                if (result.isConfirmed) {
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  window.location.href = '/login';
+                }
+              });
             }}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-all font-bold w-full active:scale-95 group mb-2"
           >

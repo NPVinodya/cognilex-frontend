@@ -35,9 +35,9 @@ export default function AdminSettingsPage() {
                 const admin = JSON.parse(adminStr);
                 const id = admin.id || admin._id || null;
                 setAdminId(id);
-                setProfileData({ 
-                    name: admin.name || 'System Admin', 
-                    email: admin.email || 'admin@cognilex.com' 
+                setProfileData({
+                    name: admin.name || 'System Admin',
+                    email: admin.email || 'admin@cognilex.com'
                 });
             } catch (e) {
                 console.error("Failed to parse admin user", e);
@@ -284,7 +284,7 @@ export default function AdminSettingsPage() {
                         {activeTab === 'profile' && (
                             <form onSubmit={handleProfileUpdate} className="p-8 md:p-12 space-y-8 animate-in slide-in-from-right duration-500">
                                 <div className="flex items-center gap-6 border-b border-slate-100 pb-8">
-                                    <img 
+                                    <img
                                         src={`https://ui-avatars.com/api/?name=${encodeURIComponent(profileData.name)}&background=181B25&color=FF9000&bold=true`}
                                         alt="Admin Avatar"
                                         className="w-24 h-24 rounded-3xl shadow-2xl border-4 border-white object-cover"

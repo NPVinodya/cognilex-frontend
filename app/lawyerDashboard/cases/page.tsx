@@ -1,8 +1,8 @@
-import ClientsPage from "@/legacy_pages/lawyerDashboard/client";
+import CasesPage from "@/legacy_pages/lawyerDashboard/cases";
 
 function Page() {
     return (
-        <ClientsPage />
+        <CasesPage />
     );
 }
 
