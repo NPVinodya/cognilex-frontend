@@ -383,7 +383,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
         setMessages(data.messages.map((m: any) => ({
           role: m.role,
           content: normalizeAnswer(m.content),
-          time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "Now",
+          time: m.created_at ? new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Now",
           sources: normalizeApiArray<SourceCitation>(m.sources),
           related_cases: normalizeApiArray<RelatedCase>(m.related_cases),
           latency: normalizeLatency(m.latency),
@@ -455,7 +455,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
     return {
       role: "bot",
       content: normalizeAnswer(data.answer),
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date().toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
       sources: normalizeApiArray<SourceCitation>(data.sources),
       related_cases: normalizeApiArray<RelatedCase>(data.related_cases),
       latency: normalizeLatency(data.latency),
@@ -467,7 +467,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
   const handleSend = async () => {
     if (!question.trim()) return;
     const q = question.trim();
-    setMessages(p => [...p, { role: "user", content: q, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
+    setMessages(p => [...p, { role: "user", content: q, time: new Date().toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }]);
     setLoading(true);
     setQuestion("");
     stopSpeaking();
@@ -964,7 +964,7 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
                             h3: ({ ...p }) => <h3 className="text-xl md:text-2xl font-playfair font-black text-slate-900 dark:text-white mb-4 mt-2 tracking-tight" {...p} />,
                             ul: ({ ...p }) => <ul className="space-y-3 mb-5 list-none pl-1" {...p} />,
                             li: ({ ...p }) => <li className="flex items-start gap-4" {...p}><span className="mt-2.5 w-2 h-2 rounded-full bg-amber-600 shadow-[0_0_10px_rgba(217,119,6,0.5)] shrink-0"></span><div className="flex-1">{(p as any).children}</div></li>,
-                            blockquote: ({ ...p }) => <blockquote className="border-l-4 border-amber-500/50 bg-amber-500/5 dark:bg-amber-500/5 pl-5 py-4 italic text-slate-600 dark:text-slate-400 rounded-r-2xl mb-5" {...p} />,
+                            blockquote: ({ ...p }) => <blockquote className="border-l-4 border-amber-500/50 pl-5 py-4 italic text-slate-600 dark:text-slate-400 mb-5" {...p} />,
                           }}>
                             {displayText}
                           </ReactMarkdown>
@@ -1043,7 +1043,15 @@ export default function CogniLexAI({ sessionId, userId = "" }: { sessionId?: str
                   }
                 }}
               />
-              <button onClick={handleSend} className="bg-amber-600 hover:bg-amber-500 text-white w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg shadow-amber-600/30 active:scale-95 group-hover:rotate-12">
+              <button 
+                onClick={handleSend} 
+                disabled={loading || typingIndex !== null}
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 ${
+                  (loading || typingIndex !== null) 
+                    ? "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed" 
+                    : "bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30 group-hover:rotate-12"
+                }`}
+              >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
               </button>
             </div>

@@ -79,9 +79,9 @@ export default function FeedbackPage() {
         const matchesSearch = f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             f.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             f.subject.toLowerCase().includes(searchTerm.toLowerCase());
-        
+
         const isSupport = f.subject.startsWith('[SUPPORT]');
-        
+
         if (activeTab === 'support') return matchesSearch && isSupport;
         return matchesSearch && !isSupport;
     });
