@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CogniLex Frontend
 
-## Getting Started
+Welcome to the frontend repository of **CogniLex AI**, an advanced RAG-powered legal assistance and lawyer management platform. Built with a modern React and Next.js stack, this frontend provides a premium, responsive, and intuitive interface for regular users, legal professionals, and system administrators.
 
-First, run the development server:
+## 🌟 Features & Functionalities
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The platform is divided into tailored experiences based on user roles, encompassing the following core functionalities:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 👤 User Functionalities
+- **User Dashboard (`/userDashboard`):** A personalized workspace for managing legal activities, saved cases, and recent chats.
+- **Lawyer Search & Discovery (`/lawyer`):** Browse, filter, and view detailed profiles of available legal professionals.
+- **Appointment Scheduling (`/my-appointments`):** seamlessly book and manage upcoming legal consultations.
+- **AI Legal Assistant Chat:** Interactive chat interface utilizing a RAG (Retrieval-Augmented Generation) system for preliminary legal queries.
+- **Secure Payments (`/checkout`, `/payment`):** Integrated checkout flow for consultation fees.
+- **Chat Sharing (`/share`):** Mobile-optimized functionality to share AI chat history externally.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### ⚖️ Lawyer Functionalities
+- **Lawyer Dashboard (`/lawyerDashboard`):** Comprehensive case, client, and appointment management system.
+- **Lawyer Onboarding (`/lawyerRegistation`):** Dedicated registration flow to verify and list new lawyers on the platform.
+- **Mobile-Responsive Workspace:** Optimized, touch-friendly views for managing cases on-the-go without losing desktop-fidelity design.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 🛡️ Admin Functionalities
+- **Admin Dashboard (`/adminDashboard`):** Centralized platform to oversee platform health, users, and lawyer verifications.
+- **RAG Document Management:** Three-layer infrastructure to securely upload, view, delete, and re-index legal documents (acts and cases) into the AI backend.
+- **Analytics & Reporting:** Interactive charts to monitor system usage, API latency, and document index status.
 
-## Learn More
+### ⚙️ Core Platform Capabilities
+- **Authentication:** Secure login and registration using JWT authentication.
+- **Document Export:** Automated PDF generation for reports and invoices.
+- **Guest Access:** Limited guest chat functionality with a dynamic, auto-expanding widget.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📚 Libraries & Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project leverages a robust and modern frontend technology stack to ensure high performance, security, and a beautiful user experience.
 
-## Deploy on Vercel
+### Core Frameworks
+- **[Next.js](https://nextjs.org/)** (v16.0.7) - React framework for SSR and routing.
+- **[React](https://react.dev/)** (v19.2.0) - UI library.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Styling & UI Components
+- **Tailwind CSS** (v4) - Utility-first CSS framework.
+- **Radix UI** - Unstyled, accessible UI primitives (Avatar, Dialog, Popover, Select, etc.).
+- **Framer Motion** - Production-ready animations and micro-interactions.
+- **Lucide React** - Clean and consistent iconography.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### State Management & Data Fetching
+- **Zustand** - Lightweight and scalable state management.
+- **Axios** - Promise-based HTTP client for API interactions.
+
+### Integrations & Services
+- **Appwrite** - Backend-as-a-Service integration for secure data and auth flows.
+- **Payhere sandbox SDK** - Secure payment gateway.
+- **TomTom Maps (`@tomtom-international/web-sdk-maps`)** - Interactive maps and location rendering.
+
+### Utility Libraries
+- **Recharts** - Composable charting library for admin analytics.
+- **jsPDF & jsPDF-AutoTable** - Client-side PDF generation.
+- **React Markdown** - Rendering formatted markdown from the AI chatbot.
+- **React Day Picker & date-fns** - Date selection and formatting.
+- **Sonner & SweetAlert2** - Toast notifications and beautiful alerts.
+
+### Testing
+- **Jest & React Testing Library** - Comprehensive unit and integration testing suite.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) (v18+) and your preferred package manager installed.
+
+### Installation
+
+1. Clone the repository and navigate to the frontend directory:
+   ```bash
+   cd cognilex-frontend
+   ```
+
+2. Install the project dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   ```
+
+3. Set up your environment variables. Create a `.env.local` file in the root directory and configure the necessary keys (Appwrite, API URLs, etc.).
+
+4. Run the development server:
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application running.
+
+## 📂 Project Structure
+
+- `app/`: Next.js App Router containing pages, layouts, and API routes.
+  - `adminDashboard/`, `lawyerDashboard/`, `userDashboard/`: Role-specific portals.
+  - `api/`: Next.js route handlers acting as a proxy to the backend.
+  - `components/`: Reusable UI components (buttons, modals, charts).
+- `public/`: Static assets (images, icons).
+- `styles/`: Global CSS and Tailwind configurations.
