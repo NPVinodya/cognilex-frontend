@@ -28,6 +28,7 @@ export default function DocumentsPage() {
     const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const BASE_API_URL = (process.env.NEXT_PUBLIC_API_URL);
 
     useEffect(() => {
         const fetchDocuments = async () => {
@@ -55,7 +56,7 @@ export default function DocumentsPage() {
 
     const handleDeleteDocument = async (docId: string) => {
         if (!confirm("Are you sure you want to delete this document?")) return;
-        
+
         try {
             // Note: Since this is purely frontend state without a specific delete API right now,
             // we will just filter it out from the local state.
@@ -69,7 +70,7 @@ export default function DocumentsPage() {
     const handleFileUpload = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!uploadFile) return;
-        
+
         setIsUploading(true);
         try {
             const storedUser = localStorage.getItem("user");
@@ -83,13 +84,13 @@ export default function DocumentsPage() {
             formData.append('folder', uploadFolder);
 
             // Call the Python FastAPI Backend directly
-            const res = await fetch(`http://127.0.0.1:8000/lawyer-dashboard/${lawyerId}/documents/upload`, {
+            const res = await fetch(`${BASE_API_URL}/lawyer-dashboard/${lawyerId}/documents/upload`, {
                 method: 'POST',
                 body: formData
             });
 
             const data = await res.json();
-            
+
             if (data.success && data.document) {
                 setDocuments(prev => [data.document, ...prev]);
                 setIsUploadModalOpen(false);
@@ -120,7 +121,7 @@ export default function DocumentsPage() {
                     <h1 className="text-[32px] font-bold text-[#181B25] tracking-tight leading-tight">Documents</h1>
                     <p className="text-slate-500 font-medium mt-1 text-sm">Organize safe legal files, uploads, and securely stored case evidence.</p>
                 </div>
-                <button 
+                <button
                     onClick={() => setIsUploadModalOpen(true)}
                     className="inline-flex items-center justify-center gap-2 bg-[#FF9000] hover:bg-[#E68200] text-white px-6 py-2.5 rounded-full shadow-md shadow-orange-600/20 text-sm font-bold transition"
                 >
@@ -143,7 +144,7 @@ export default function DocumentsPage() {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold text-[#181B25]">Quick Folders</h2>
                     {selectedFolder && (
-                        <button 
+                        <button
                             onClick={() => setSelectedFolder(null)}
                             className="text-sm font-bold text-[#FF9000] hover:text-[#E68200]"
                         >
@@ -157,8 +158,8 @@ export default function DocumentsPage() {
                         // Calculate real file count for this folder based on current documents state
                         const folderDocsCount = documents.filter(d => d.folder_id === folder.id).length;
                         return (
-                            <div 
-                                key={folder.id} 
+                            <div
+                                key={folder.id}
                                 onClick={() => setSelectedFolder(isSelected ? null : folder.id)}
                                 className={`bg-white border rounded-2xl shadow-[0_4px_20px_-8px_rgba(0,0,0,0.05)] p-5 hover:shadow-lg transition cursor-pointer flex flex-col gap-4 ${isSelected ? 'border-[#FF9000] ring-1 ring-[#FF9000]' : 'border-slate-100'}`}
                             >
@@ -205,15 +206,15 @@ export default function DocumentsPage() {
                                 <div className="flex items-center gap-4">
                                     <p className="text-xs text-slate-500 font-medium hidden sm:flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {doc.date}</p>
                                     <div className="flex items-center gap-2">
-                                        <a 
-                                            href={doc.url} 
-                                            target="_blank" 
+                                        <a
+                                            href={doc.url}
+                                            target="_blank"
                                             rel="noopener noreferrer"
                                             className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-[#FF9000] hover:border-[#FF9000] rounded-lg transition shadow-sm"
                                         >
                                             <Download className="w-4 h-4" />
                                         </a>
-                                        <button 
+                                        <button
                                             onClick={() => handleDeleteDocument(doc.id)}
                                             className="p-2 bg-white border border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 rounded-lg transition shadow-sm"
                                         >
@@ -240,18 +241,18 @@ export default function DocumentsPage() {
                             <button onClick={() => setIsUploadModalOpen(false)} className="p-2 text-slate-400 hover:text-slate-800 rounded-full hover:bg-white transition"><X className="w-5 h-5" /></button>
                         </div>
                         <form onSubmit={handleFileUpload} className="p-6 space-y-6 text-left">
-                            
+
                             {/* File Dropzone */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-2">Select File</label>
-                                <div 
+                                <div
                                     className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition ${uploadFile ? 'border-emerald-500 bg-emerald-50' : 'border-slate-300 hover:border-[#FF9000] hover:bg-orange-50/30'}`}
                                     onClick={() => fileInputRef.current?.click()}
                                 >
-                                    <input 
-                                        type="file" 
-                                        className="hidden" 
-                                        ref={fileInputRef} 
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        ref={fileInputRef}
                                         onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
                                     />
                                     {uploadFile ? (
@@ -273,7 +274,7 @@ export default function DocumentsPage() {
                             {/* Note Field */}
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 mb-2">Document Note / Description</label>
-                                <textarea 
+                                <textarea
                                     value={uploadNote}
                                     onChange={(e) => setUploadNote(e.target.value)}
                                     placeholder="Add a private note about this document (e.g. 'Signed copy from client')"
@@ -285,11 +286,11 @@ export default function DocumentsPage() {
                             {/* Folder Select */}
                             <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                 <label className="block text-sm font-bold text-[#181B25] mb-2 flex items-center gap-2">
-                                    <Folder className="w-4 h-4 text-[#FF9000]" /> 
+                                    <Folder className="w-4 h-4 text-[#FF9000]" />
                                     Save this document in a Category (Optional)
                                 </label>
                                 <p className="text-xs text-slate-500 mb-3">Selecting a category makes it easier to find this document later when you click on the folder above.</p>
-                                <select 
+                                <select
                                     value={uploadFolder}
                                     onChange={(e) => setUploadFolder(e.target.value)}
                                     className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#FF9000] transition shadow-sm"
@@ -299,8 +300,8 @@ export default function DocumentsPage() {
                                 </select>
                             </div>
 
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 disabled={!uploadFile || isUploading}
                                 className="w-full bg-[#FF9000] hover:bg-[#E68200] text-white py-3.5 rounded-xl font-bold shadow-md shadow-orange-600/20 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
